@@ -1,35 +1,35 @@
-from utils import *
+from utils.excel_parser_utils import *
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-import argparse
-import os
-import warnings
 from icecream import ic
 
 ic.configureOutput(prefix="LOGS| ")
 ic.disable()
 
 
-def transform_pipeline(sheet, input, output, modded, intensive):
+def transform_pipeline(input, output):
+    list_of_warnings = []
     # Проверка наличия активного листа
+    
+    workbook = load_workbook(input, data_only=True, read_only=False)
+    sheet = workbook.active
+    
     if sheet is None:
-        raise Exception("Файл не содержит активного листа.")
+       return False, "Файл не содержит активного листа."
 
     if sheet.max_row == 0 or sheet.max_column == 0:
-        raise Exception("Активный лист пустой.")
+        return False, "Активный лист пустой."
 
     # Разъеденим все объедененные ячейки, они мешают.
     sheet = unmerge_cells(sheet)
 
     if sheet["A1"].value is None or sheet["A1"].value == "":
-        warnings.warn(
-            "Данные не начинаются с ячейки A1. Было применено удаление строк. Рекомендуется проверить результат.",
-            UserWarning,
-        )
-
+        list_of_warnings.append("Данные не начинаются с ячейки A1. Было применено удаление строк. Рекомендуется проверить результат!")
+            
         first_non_empty = None
-        for row in sheet.iter_rows(min_col=1, max_col=1):
+        for idx, row in enumerate(sheet.iter_rows(min_col=1, max_col=1)):
             if row[0].value is not None:
+                first_non_empty = idx + 1
                 break
         if first_non_empty is not None and first_non_empty > 1:
             sheet.delete_rows(1, first_non_empty - 1)
@@ -47,37 +47,27 @@ def transform_pipeline(sheet, input, output, modded, intensive):
     set_column_width(sheet, ["B", "C", "D", "E", "F", "G", "H", "I"], 18)
     set_column_width(sheet, ["A"], 63)
 
-    # Ищем индекс ячейки в первой строке с "итого"
-    for cell in next(sheet.iter_rows()):
-        if "Итого" in cell.value:
-            idx = cell.col_idx
-            break
-
-    process_header(sheet)
+    code, msg = process_header(sheet)
+    if not code:
+        return code, msg
 
     otvetst_col_letter = get_column_letter(sheet.max_column - 1)
 
     # Этап добавления рaсчетов
     # data[0] расчеты в руб, data[1] - в %
-    data, logs = calculate_additional_data(sheet)
+    code, msg, data, logs = calculate_additional_data(sheet)
+    if not code:
+        return False, msg
 
     for log in logs:
         if any(value == "" for value in log.values()):
-            raise Exception(
-                'При расчетах произошла ошибка. Не были найдены ячейки "Развитие" или "Сопровождение" в колонке "Наименование показателя эффективности и результативности деятельности учреждения". Возможно опечатки.'
-            )
-
+            return False, 'При расчетах произошла ошибка. Не были найдены ячейки "Развитие" или "Сопровождение" в колонке "Наименование показателя эффективности и результативности деятельности учреждения". Возможно опечатки.'
+            
     if any(len(value.split("+")) < 6 for value in logs[0].values()):
-        warnings.warn(
-            "Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все суммы (руб) содержат 6 значений.",
-            UserWarning,
-        )
+        list_of_warnings.append("Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все суммы (руб) содержат 6 значений.")
 
     if any(len(value.split("/")[1].split("+")) < 6 for value in logs[1].values()):
-        warnings.warn(
-            "Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все выражения (проценты) содержат 6 значений в знаменателе.",
-            UserWarning,
-        )
+        list_of_warnings.append("Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все выражения (проценты) содержат 6 значений в знаменателе.")
 
     last_row = find_last_row_with_word(sheet, otvetst_col_letter, "Бекетова") + 1
     col_rub = get_column_letter(find_column_index_by_header(sheet, ["Итого", "руб"]))
@@ -104,76 +94,14 @@ def transform_pipeline(sheet, input, output, modded, intensive):
     # sheet.delete_rows(2)
     delete_empty_rows(sheet)
     fill_column_with_ids(sheet, 2, 2, get_column_letter(sheet.max_column))
-    sheet = replace_bad_values(sheet, intensive)
+    sheet = replace_bad_values(sheet)
     apply_borders_to_all_cells(sheet)
     apply_font_to_all_cells(sheet, "Times New Roman", 11)
 
     try:
-        current_dir = os.getcwd()
-        save_path = None
-        if modded:
-            dir_path = os.path.join(current_dir, "modded_files")
-            if not os.path.exists(dir_path):
-                os.mkdir(dir_path)
-            save_path = os.path.join(dir_path, "изм_" + input)
-            workbook.save(save_path)
-        else:
-            save_path = output
-            workbook.save(save_path)
-        return True, f"Файл успешно обработан и сохранен как {save_path}"
-
+        workbook.save(output)
+        return True, "Файл успешно обработан!", list_of_warnings, logs
+        
+    
     except Exception as e:
-        raise Exception(f"Произошла ошибка при сохранении файла. {e}")
-
-
-if __name__ == "__main__":
-    # Добавляем аргументы
-    parser = argparse.ArgumentParser(
-        "Парсер документов Excel. Трансформирует таблицу по заданным правилам."
-    )
-    parser.add_argument(
-        "input",
-        help="Путь к входному файлу Excel. Поддерживаемые расширения: xlsx/xlsm/xltx/xltm",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        help="Путь к выходному файлу (обработанному). Если используется без аргумента -m указать название и расширение сохраняемого файла.",
-        default="modified.xlsx",
-    )
-    parser.add_argument(
-        "--modded",
-        "-m",
-        help="Добавить приставку modded_ к входному файлу.",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--verbose",
-        "-v",
-        help="Включить минимальное логирование (пока только расчетов)",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--intensive",
-        "-i",
-        help="Удалить любые управляющие символы, включая пробел.",
-        action="store_true",
-    )
-
-    # Парсим аргументы
-    args = parser.parse_args()
-
-    try:
-        workbook = load_workbook(args.input, data_only=True, read_only=False)
-        sheet = workbook.active
-    except Exception as e:
-        raise Exception(f"Произошла ошибка при открытии файла. {e}")
-
-    if args.verbose:
-        ic.enable()
-
-    print(
-        transform_pipeline(sheet, args.input, args.output, args.modded, args.intensive)[
-            1
-        ]
-    )
+        return True, f"Произошла ошибка при сохранении файла. {e}"

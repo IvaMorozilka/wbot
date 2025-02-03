@@ -209,7 +209,7 @@ def process_header(sheet):
 
     # Если не найдены ключевые ячейки, выходим
     if responsible_col is None or itogo_col is None:
-        raise Exception("Не найдены ячейки 'Ответственный' или 'Итого'.")
+        return False, "Не найдены ячейки 'Ответственный' или 'Итого'."
 
     # Добавляем ячейку "ID" справа от "Ответственный", если справа пусто
     if (
@@ -235,6 +235,8 @@ def process_header(sheet):
     if columns_to_delete > 0:
         # Удаляем лишние столбцы слева от "Итого"
         sheet.delete_cols(start_col, columns_to_delete)
+    
+    return True, ""
 
     # if columns_to_keep == 2:
     #      for col, repl in zip(range(itogo_col - columns_to_keep, itogo_col), ['текущий', 'текущий']):
@@ -279,7 +281,7 @@ def calculate_additional_data(sheet):
     col_perc = get_column_letter(find_column_index_by_header(sheet, ["Итого", "%"]))
 
     if col_rub is None or col_perc is None:
-        raise Exception("Не найдены столбцы 'Итого руб' или 'Итого %'.")
+        return False, "Не найдены столбцы 'Итого руб' или 'Итого %'."
 
     prin_pos_start = find_last_row_with_word(
         sheet, "A", "Принято бюджетных обязательств"
@@ -301,13 +303,15 @@ def calculate_additional_data(sheet):
     vydel_pos_end = prin_pos_start
 
     if prin_pos_start is None or isp_pos_start is None or vydel_pos_start is None:
-        raise Exception(
-            "Не найдены ключевые строки ('Принято бюджетных обязательств' или 'Исполнено бюджетных обязательств') для расчетов."
+        return (
+            False,
+            "Не найдены ключевые строки ('Принято бюджетных обязательств' или 'Исполнено бюджетных обязательств') для расчетов.",
         )
 
     if prin_pos_end is None or isp_pos_end is None or vydel_pos_end is None:
-        raise Exception(
-            "Не найдены ключевые строки ('Принято бюджетных обязательств (по месяцам нарастающим итогом) - ФАКТ' или 'Исполнено бюджетных обязательств (по месяцам нарастающим итогом) - ФАКТ') для расчетов."
+        return (
+            False,
+            "Не найдены ключевые строки ('Принято бюджетных обязательств (по месяцам нарастающим итогом) - ФАКТ' или 'Исполнено бюджетных обязательств (по месяцам нарастающим итогом) - ФАКТ') для расчетов.",
         )
 
     # ic(prin_pos_start, prin_pos_end, isp_pos_start, isp_pos_end)
@@ -385,4 +389,4 @@ def calculate_additional_data(sheet):
     result = [result_rub, result_perc]
     # ic(result)
 
-    return result, logs
+    return True, "", result, logs
