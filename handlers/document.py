@@ -5,7 +5,7 @@ from aiogram.types import FSInputFile
 import os
 
 from utils.script import transform_pipeline
-from create_bot import bot
+from create_bot import bot, download_dir
 
 
 
@@ -27,15 +27,16 @@ async def handle_document(message: Message):
         file_id = message.document.file_id
         file = await bot.get_file(file_id)
         file_path = file.file_path
+
         downloaded_file = await bot.download_file(file_path)
-
-        download_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
         os.makedirs(download_dir, exist_ok=True)
-
         local_file_path = os.path.join(download_dir, f"{message.document.file_name}")
         with open(local_file_path, 'wb') as new_file:
             new_file.write(downloaded_file.read())
         # End download process
+        
+        
+
          
 
         
