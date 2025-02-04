@@ -10,12 +10,12 @@ ic.disable()
 def transform_pipeline(input, output):
     list_of_warnings = []
     # Проверка наличия активного листа
-    
+
     workbook = load_workbook(input, data_only=True, read_only=False)
     sheet = workbook.active
-    
+
     if sheet is None:
-       return False, "Файл не содержит активного листа."
+        return False, "Файл не содержит активного листа."
 
     if sheet.max_row == 0 or sheet.max_column == 0:
         return False, "Активный лист пустой."
@@ -24,8 +24,10 @@ def transform_pipeline(input, output):
     sheet = unmerge_cells(sheet)
 
     if sheet["A1"].value is None or sheet["A1"].value == "":
-        list_of_warnings.append("Данные не начинаются с ячейки A1. Было применено удаление строк. Рекомендуется проверить результат!")
-            
+        list_of_warnings.append(
+            "Данные не начинаются с ячейки A1. Было применено удаление строк. Рекомендуется проверить результат!"
+        )
+
         first_non_empty = None
         for idx, row in enumerate(sheet.iter_rows(min_col=1, max_col=1)):
             if row[0].value is not None:
@@ -61,13 +63,20 @@ def transform_pipeline(input, output):
 
     for log in logs:
         if any(value == "" for value in log.values()):
-            return False, 'При расчетах произошла ошибка. Не были найдены ячейки "Развитие" или "Сопровождение" в колонке "Наименование показателя эффективности и результативности деятельности учреждения". Возможно опечатки.'
-            
+            return (
+                False,
+                'При расчетах произошла ошибка. Не были найдены ячейки "Развитие" или "Сопровождение" в колонке "Наименование показателя эффективности и результативности деятельности учреждения". Возможно опечатки.',
+            )
+
     if any(len(value.split("+")) < 6 for value in logs[0].values()):
-        list_of_warnings.append("Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все суммы (руб) содержат 6 значений.")
+        list_of_warnings.append(
+            "Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все суммы (руб) содержат 6 значений."
+        )
 
     if any(len(value.split("/")[1].split("+")) < 6 for value in logs[1].values()):
-        list_of_warnings.append("Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все выражения (проценты) содержат 6 значений в знаменателе.")
+        list_of_warnings.append(
+            "Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все выражения (проценты) содержат 6 значений в знаменателе."
+        )
 
     last_row = find_last_row_with_word(sheet, otvetst_col_letter, "Бекетова") + 1
     col_rub = get_column_letter(find_column_index_by_header(sheet, ["Итого", "руб"]))
@@ -101,7 +110,13 @@ def transform_pipeline(input, output):
     try:
         workbook.save(output)
         return True, "Файл успешно обработан!", list_of_warnings, logs
-        
-    
+
     except Exception as e:
         return True, f"Произошла ошибка при сохранении файла. {e}"
+
+
+def process_document_by_option(input: str, output: str, category: str):
+    if category == "ОЭП":
+        return "ОБРАБОТАЛ ДОКУМЕНТ ОЭП"
+    else:
+        return "Обработал другие документы"

@@ -3,17 +3,18 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import main_loader_kb
+from aiogram.fsm.context import FSMContext
+
+from filters.admin_check import IsAdmin
+from create_bot import admins
 
 start_router = Router()
 
+
 @start_router.message(CommandStart())
-async def cmd_start(message: Message):
-    await message.answer('Данные для какого дашборда вы загружаете?', reply_markup = main_kb())
-
-@start_router.message(Command('start_2'))
-async def cmd_start_2(message: Message):
-    await message.answer('Запуск сообщения по команде /start_2 используя фильтр Command()')
-
-@start_router.message(F.text == '/start_3')
-async def cmd_start_3(message: Message):
-    await message.answer('Запуск сообщения по команде /start_3 используя магический фильтр F.text!')
+async def cmd_start(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        text="Бот для загрузки данных в дашборды. Воспользуйтесь меню.",
+        reply_markup=main_kb(message.from_user.id),
+    )
