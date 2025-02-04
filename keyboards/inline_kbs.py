@@ -1,9 +1,10 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from utils.data import dashboard_names
 
 
 def main_loader_kb():
-    inline_kb_list = [
-        [InlineKeyboardButton(text="Данные ОЭП", url = "www.google.com")],
-    ]
-    return InlineKeyboardMarkup(inline_keyboard=inline_kb_list)
+    builder = InlineKeyboardBuilder()
+    for name in dashboard_names:
+        builder.button(text=name, callback_data=name)
+    builder.adjust(3, 3, 3, 1)
+    return builder.as_markup()
