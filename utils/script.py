@@ -116,7 +116,7 @@ def transform_pipeline(input, output):
 
 
 def process_document_by_option(input: str, output: str, category: str):
-    if category == "ОЭП":
+    if category == "Гумманитарная помощь СВО":
         return "ОБРАБОТАЛ ДОКУМЕНТ ОЭП"
     else:
         return "Обработал другие документы"

@@ -6,10 +6,11 @@ from keyboards.inline_kbs import main_loader_kb, goback_actions_kb
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from utils.script import process_document_by_option
+import asyncio
 import os
 
 from filters.admin_check import IsAdmin
-from create_bot import admins, download_dir, bot
+from create_bot import admins, download_dir, bot, upload_notification_recievers
 
 menu_router = Router()
 
@@ -115,11 +116,18 @@ async def process_document(message: Message, state: FSMContext):
 
 @menu_router.message(F.document, DocumentProcessing.document)
 async def process_document(message: Message, state: FSMContext):
+    data = await state.get_data()
+    dshb_name = data.get("option")
+
     if not message.document.file_name.endswith((".xlsx",)):
         await message.answer(
             "Пожалуйста, отправьте файл в формате Excel. Поддерживаемые расширения файлов .xlsx"
         )
         return
+
+    # User data
+    print(message.from_user.full_name)
+    print(message.from_user.username)
 
     # Downloading...
     file_id = message.document.file_id
@@ -134,9 +142,23 @@ async def process_document(message: Message, state: FSMContext):
         new_file.write(downloaded_file.read())
     # End download process
     data = await state.get_data()
-    result = process_document_by_option(
-        local_file_path, local_file_path, data.get("option")
-    )
-    await message.answer(result)
+
+    # result = process_document_by_option(
+    #     local_file_path, local_file_path, data.get("option")
+    # )
+    caption_message = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {message.from_user.full_name}, @{message.from_user.username or 'не указан'}"
+    await message.answer("Документ был отправлен ответственному лицу")
+
+    for user_id in upload_notification_recievers:
+        try:
+            await bot.send_document(
+                chat_id=user_id,  # ID чата пользователя
+                document=file_id,  # Открываем сохраненный файл
+                caption=caption_message,  # Необязательный текст под файлом
+            )
+        except Exception as e:
+            print(e)
+
+        await asyncio.sleep(0.5)
+
     await state.clear()
-    os.remove(local_file_path)
