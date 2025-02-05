@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery
 from keyboards.all_kb import main_kb
-from keyboards.inline_kbs import main_loader_kb, back_button
+from keyboards.inline_kbs import main_loader_kb, goback_actions_kb
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from utils.script import process_document_by_option
@@ -54,7 +54,14 @@ async def restart_bot(message: Message, state: FSMContext):
 
 @menu_router.callback_query(F.data == "change_mind")
 async def process_change_mind(call: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    bot_error_msg_id = data.get("bot_error_msg_id")
+
     await call.message.delete()
+    if bot_error_msg_id:
+        await call.bot.delete_message(
+            chat_id=call.message.chat.id, message_id=bot_error_msg_id
+        )
     back_msg = await call.message.answer(
         text="Возвращаю вас к меню.", reply_markup=main_kb(call.from_user.id)
     )
@@ -68,9 +75,14 @@ async def process_option_choice(call: CallbackQuery, state: FSMContext):
     await state.update_data(option=option_name)
     await call.message.edit_text(
         text=f"Выбран дашборд <b>{option_name}</b>. Отправьте документ вложением, в следующем сообщении.",
-        reply_markup=back_button(),
+        reply_markup=goback_actions_kb(),
     )
     await state.set_state(DocumentProcessing.document)
+
+
+@menu_router.message(F.text, DocumentProcessing.option)
+async def process_option_choice(message: Message):
+    await message.delete()
 
 
 @menu_router.callback_query(F.data == "back", DocumentProcessing.document)
