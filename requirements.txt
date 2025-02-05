@@ -2,3 +2,4 @@ aiogram
 openpyxl
 python-decouple
 icecream
+apscheduler
