@@ -3,3 +3,4 @@ openpyxl
 python-decouple
 icecream
 apscheduler
+aiohttp-socks
