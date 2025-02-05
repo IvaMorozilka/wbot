@@ -167,7 +167,6 @@ async def process_document(message: Message, state: FSMContext):
     #     local_file_path, local_file_path, data.get("option")
     # )
     caption_message = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {message.from_user.full_name}, @{message.from_user.username or 'не указан'}"
-    await message.answer("Документ был отправлен ответственному лицу")
 
     for user_id in upload_notification_recievers:
         try:
@@ -180,5 +179,5 @@ async def process_document(message: Message, state: FSMContext):
             print(e)
 
         await asyncio.sleep(0.5)
-
+    await message.answer("🟢Документ был отправлен ответственному лицу")
     await state.clear()
