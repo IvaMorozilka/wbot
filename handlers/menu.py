@@ -20,6 +20,7 @@ class DocumentProcessing(StatesGroup):
     document = State()
     bot_error_msg_id = State()
     bot_back_msg_id = State()
+    bot_early_doc_msg_id = State()
 
 
 @menu_router.message(F.text == "⬇️Загрузить данные для дашборда")
@@ -70,8 +71,36 @@ async def process_change_mind(call: CallbackQuery, state: FSMContext):
     await state.update_data(bot_back_msg_id=back_msg.message_id)
 
 
+@menu_router.message(F.text, DocumentProcessing.option)
+async def process_option_choice(message: Message):
+    await message.delete()
+
+
+@menu_router.message(F.document, DocumentProcessing.option)
+async def process_option_choice(message: Message, state: FSMContext):
+    data = await state.get_data()
+    bot_early_doc_msg_id = data.get("bot_early_doc_msg_id")
+
+    await message.delete()
+    if bot_early_doc_msg_id:
+        await bot.delete_message(message.chat.id, bot_early_doc_msg_id)
+        await state.update_data(bot_early_doc_msg_id=None)
+
+    new_msg = await message.answer(
+        text="⬆️Сначала выберите тип дашборда для загрузки данных."
+    )
+    await state.update_data(bot_early_doc_msg_id=new_msg.message_id)
+
+
 @menu_router.callback_query(F.data, DocumentProcessing.option)
 async def process_option_choice(call: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    bot_early_doc_msg_id = data.get("bot_early_doc_msg_id")
+
+    if bot_early_doc_msg_id:
+        await bot.delete_message(call.message.chat.id, bot_early_doc_msg_id)
+        await state.update_data(bot_early_doc_msg_id=None)
+
     option_name = call.data
     await state.update_data(option=option_name)
     await call.message.edit_text(
@@ -79,11 +108,6 @@ async def process_option_choice(call: CallbackQuery, state: FSMContext):
         reply_markup=goback_actions_kb(),
     )
     await state.set_state(DocumentProcessing.document)
-
-
-@menu_router.message(F.text, DocumentProcessing.option)
-async def process_option_choice(message: Message):
-    await message.delete()
 
 
 @menu_router.callback_query(F.data == "back", DocumentProcessing.document)
@@ -124,10 +148,6 @@ async def process_document(message: Message, state: FSMContext):
             "Пожалуйста, отправьте файл в формате Excel. Поддерживаемые расширения файлов .xlsx"
         )
         return
-
-    # User data
-    print(message.from_user.full_name)
-    print(message.from_user.username)
 
     # Downloading...
     file_id = message.document.file_id
