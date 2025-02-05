@@ -21,6 +21,6 @@ def back_button():
 def changed_mind_button():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Я передумал", callback_data="back")]
+            [InlineKeyboardButton(text="Обратно, к меню", callback_data="back")]
         ]
     )

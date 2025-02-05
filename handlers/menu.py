@@ -17,12 +17,18 @@ menu_router = Router()
 class DocumentProcessing(StatesGroup):
     option = State()
     document = State()
-    last_bot_message_id = State()
+    bot_error_msg_id = State()
+    bot_back_msg_id = State()
 
 
 @menu_router.message(F.text == "⬇️Загрузить данные для дашборда")
 async def show_upload_options(message: Message, state: FSMContext):
+    data = await state.get_data()
+    bot_back_msg_id = data.get("bot_back_msg_id")
     await message.delete()
+    if bot_back_msg_id:
+        await bot.delete_message(message.chat.id, bot_back_msg_id)
+    await state.clear()
     await message.answer(
         "Выберите дашборд, для которого вы хотите загрузить данные:",
         reply_markup=main_loader_kb(),
@@ -30,14 +36,30 @@ async def show_upload_options(message: Message, state: FSMContext):
     await state.set_state(DocumentProcessing.option)
 
 
+@menu_router.message(F.text == "🛟Поддержка")
+async def show_support_options(message: Message):
+    await message.answer(
+        text="🐞Если у вас возникли трудности с работой бота:\n👉🏾Вы не можете загрузить документ\n👉🏾У вас проблема с навигацией по меню\n👉🏾Возникла ошибка при работе бота\n💬Для начала попробуйте перезапустить бота, командой /restart.\nЕсли это не помогло, напишите разработчику @Bobflipflop\n\n❓Если у вас возникли вопросы, по поводу загружаемых данных напишите свой вопрос - @mkuzhlev",
+        reply_markup=main_kb(message.from_user.id),
+    )
+
+
+@menu_router.message(Command("restart"))
+async def restart_bot(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        "🔄Состояние сброшено!", reply_markup=main_kb(message.from_user.id)
+    )
+
+
 @menu_router.callback_query(F.data == "change_mind")
 async def process_change_mind(call: CallbackQuery, state: FSMContext):
     await call.message.delete()
-    await call.message.answer(
-        text="Хорошо. Выберете пункт меню.",
-        reply_markup=main_kb(call.from_user.id),
+    back_msg = await call.message.answer(
+        text="Возвращаю вас к меню.", reply_markup=main_kb(call.from_user.id)
     )
     await state.clear()
+    await state.update_data(bot_back_msg_id=back_msg.message_id)
 
 
 @menu_router.callback_query(F.data, DocumentProcessing.option)
@@ -48,34 +70,34 @@ async def process_option_choice(call: CallbackQuery, state: FSMContext):
         text=f"Выбран дашборд <b>{option_name}</b>. Отправьте документ вложением, в следующем сообщении.",
         reply_markup=back_button(),
     )
-    await state.update_data(last_bot_message_id=call.message.message_id)
     await state.set_state(DocumentProcessing.document)
 
 
 @menu_router.callback_query(F.data == "back", DocumentProcessing.document)
 async def process_back_button(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    last_bot_message_id = data.get("last_bot_message_id")
-    if last_bot_message_id:
+    bot_error_msg_id = data.get("bot_error_msg_id")
+    if bot_error_msg_id:
         await call.bot.delete_message(
-            chat_id=call.message.chat.id, message_id=last_bot_message_id
+            chat_id=call.message.chat.id, message_id=bot_error_msg_id
         )
-
-    # Отправляем новое сообщение
-    new_message = await call.message.answer(
+    await call.message.edit_text(
         "Выберите дашборд, для которого вы хотите загрузить данные:",
         reply_markup=main_loader_kb(),
     )
-
-    # Сохраняем ID нового сообщения бота
-    await state.update_data(last_bot_message_id=new_message.message_id)
+    await state.update_data(bot_error_msg_id=None)
     await state.set_state(DocumentProcessing.option)
 
 
 @menu_router.message(~F.document, DocumentProcessing.document)
 async def process_document(message: Message, state: FSMContext):
-    print(message.chat.type)
-    await message.answer("Пожалуйста, отправьте документ.")
+    data = await state.get_data()
+    bot_error_msg_id = data.get("bot_error_msg_id")
+    await message.delete()
+    if bot_error_msg_id:
+        await bot.delete_message(chat_id=message.chat.id, message_id=bot_error_msg_id)
+    error_message = await message.answer("Пожалуйста, отправьте документ.")
+    await state.update_data(bot_error_msg_id=error_message.message_id)
     await state.set_state(DocumentProcessing.document)
 
 
