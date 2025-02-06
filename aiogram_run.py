@@ -1,6 +1,6 @@
 import asyncio
-from create_bot import bot, dp, scheduler
-from handlers.start import start_router
+from create_bot import bot, dp, scheduler  # noqa: F401
+from handlers.commands import commands_router
 from handlers.document import document_router
 from handlers.menu import menu_router
 from aiogram.types import BotCommand, BotCommandScopeDefault
@@ -24,7 +24,7 @@ async def start_bot():
 async def main():
     # scheduler.add_job(send_time_msg, 'interval', seconds=10)
     # scheduler.start()
-    dp.include_routers(start_router, document_router, menu_router)
+    dp.include_routers(commands_router, document_router, menu_router)
     dp.startup.register(start_bot)
     try:
         await bot.delete_webhook(drop_pending_updates=True)
