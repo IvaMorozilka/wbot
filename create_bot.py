@@ -8,10 +8,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import os
 from aiogram.client.session.aiohttp import AiohttpSession
 
-session = AiohttpSession(proxy="http://proxy.plo.lan:3128")
+# session = AiohttpSession(proxy=config("PROXY_URL"))
+session = None
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-admins = [int(admin_id) for admin_id in config("ADMINSs").split(",")]
+admins = [int(admin_id) for admin_id in config("ADMINS").split(",")]
 upload_notification_recievers = [
     int(user_id) for user_id in config("UPLOAD_NOTIFICATION_RECEIVERS").split(",")
 ]
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 download_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
 
 bot = Bot(
-    token=config("TOKEN"),
+    token=config("TOKEN_DEV"),
     default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     session=session,
 )
