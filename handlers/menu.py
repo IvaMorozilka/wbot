@@ -40,8 +40,17 @@ async def show_upload_options(message: Message, state: FSMContext):
 
 @menu_router.message(F.text == "🛟Поддержка")
 async def show_support_options(message: Message):
+    await message.delete()
     await message.answer(
         text="🐞Если у вас возникли трудности с работой бота:\n👉🏾Вы не можете загрузить документ\n👉🏾У вас проблема с навигацией по меню\n👉🏾Возникла ошибка при работе бота\n💬Для начала попробуйте перезапустить бота, командой /restart.\nЕсли это не помогло, напишите разработчику @Bobflipflop\n\n❓Если у вас возникли вопросы, по поводу загружаемых данных напишите свой вопрос - @mkuzhlev",
+        reply_markup=main_kb(message.from_user.id),
+    )
+
+@menu_router.message(F.text == "⚙️Настройки")
+async def show_support_options(message: Message):
+    await message.delete()
+    await message.answer(
+        text="Данная функция пока не доступна. ☹",
         reply_markup=main_kb(message.from_user.id),
     )
 
@@ -156,11 +165,15 @@ async def process_document(message: Message, state: FSMContext):
     file_name = message.document.file_name
 
     # Downloading
-    # downloaded_file = await bot.download_file(file_path)
-    # os.makedirs(download_dir, exist_ok=True)
-    # local_file_path = os.path.join(download_dir, f"{file_name}")
-    # with open(local_file_path, "wb") as new_file:
-    #     new_file.write(downloaded_file.read())
+    try: 
+        downloaded_file = await bot.download_file(file_path)
+        os.makedirs(download_dir, exist_ok=True)
+        local_file_path = os.path.join(download_dir, f"{file_name}")
+        with open(local_file_path, "wb") as new_file:
+            new_file.write(downloaded_file.read())
+    except Exception as e:
+        print(f'СОХРАНЕНИЕ ФАЙЛА - ОШИБКА: {e}')
+
     # End download process
     data = await state.get_data()
 
