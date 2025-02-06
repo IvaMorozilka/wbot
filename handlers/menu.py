@@ -149,17 +149,18 @@ async def process_document(message: Message, state: FSMContext):
         )
         return
 
-    # Downloading...
+    # Getting file info
     file_id = message.document.file_id
     file = await bot.get_file(file_id)
     file_path = file.file_path
     file_name = message.document.file_name
 
-    downloaded_file = await bot.download_file(file_path)
-    os.makedirs(download_dir, exist_ok=True)
-    local_file_path = os.path.join(download_dir, f"{file_name}")
-    with open(local_file_path, "wb") as new_file:
-        new_file.write(downloaded_file.read())
+    # Downloading
+    # downloaded_file = await bot.download_file(file_path)
+    # os.makedirs(download_dir, exist_ok=True)
+    # local_file_path = os.path.join(download_dir, f"{file_name}")
+    # with open(local_file_path, "wb") as new_file:
+    #     new_file.write(downloaded_file.read())
     # End download process
     data = await state.get_data()
 
