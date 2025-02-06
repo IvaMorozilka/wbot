@@ -15,6 +15,6 @@ start_router = Router()
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        text="Бот для загрузки данных в дашборды. Воспользуйтесь меню.",
+        text="Бот для загрузки данных в дашборды. Воспользуйтесь меню.\nℹБот может работать медленно на мобильных устройствах из-за анимации удаления сообщений.",
         reply_markup=main_kb(message.from_user.id),
     )
