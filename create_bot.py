@@ -11,7 +11,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 session = AiohttpSession(proxy="http://proxy.plo.lan:3128")
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-admins = [int(admin_id) for admin_id in config("ADMINS").split(",")]
+admins = [int(admin_id) for admin_id in config("ADMINSs").split(",")]
 upload_notification_recievers = [
     int(user_id) for user_id in config("UPLOAD_NOTIFICATION_RECEIVERS").split(",")
 ]
