@@ -14,7 +14,7 @@ def main_kb(user_id):
     keyboard = ReplyKeyboardMarkup(
         keyboard=kb_list,
         resize_keyboard=True,
-        one_time_keyboard=True,
+        one_time_keyboard=False,
         input_field_placeholder="Выберите категорию:",
     )
     return keyboard
