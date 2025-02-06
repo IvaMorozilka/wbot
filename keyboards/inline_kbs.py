@@ -8,7 +8,7 @@ def main_loader_kb():
     for name in dashboard_names:
         builder.button(text=name, callback_data=name)
     builder.button(text="Обратно в меню", callback_data="change_mind")
-    # builder.adjust(3, 3, 2, 2, 1)
+    builder.adjust(1, 1)
     return builder.as_markup()
 
 
