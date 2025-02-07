@@ -146,42 +146,24 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
     users_ids_without_send = await send_document(file_id, message, caption_text)
     user_names = ["Без базы данных упоминнание по id недоступно"]
     num_reciever_users = len(upload_notification_recievers)
-    sending_text = f"Отправляю документ...\nСтатус: {'⚪️' * num_reciever_users}"
-    sending_msg = await message.answer(text=sending_text)
 
-    for idx, user_id in enumerate(upload_notification_recievers):
-        try:
-            await bot.send_document(
-                chat_id=user_id,  # ID чата пользователя
-                document=file_id,  # Открываем сохраненный файл
-                caption=caption_message,  # Необязательный текст под файлом
-            )
-            sending_text = sending_text.replace("⚪️", "🟢", 1)
-            await bot.edit_message_text(
-                text=sending_text,
-                chat_id=message.chat.id,
-                message_id=sending_msg.message_id,
-            )
-        except Exception as e:
-            print(e)
-            # Обновляем строку статуса с ошибкой
-            sending_text = sending_text.replace("⚪️", "🔴", 1)
-            await bot.edit_message_text(
-                text=sending_text,
-                chat_id=message.chat.id,
-                message_id=sending_msg.message_id,
-            )
+    if len(users_ids_without_send) == num_reciever_users:
+        await message.answer(
+            "🔴При отправке документа произошла ошибка, документ не был отправлен."
+        )
+        await state.set_state(DocumentProcessing.waiting_for_option)
+    elif len(users_ids_without_send) != 0:
+        await message.reply(
+            f"🟡Документ был отправлен всем, кроме:\n({'\n'.join(user_names)})"
+        )
+        await state.clear()
+    else:
+        await message.reply(
+            "🏁Ваш документ был успешно отправлен!",
+            reply_markup=main_kb(message.from_user.id),
+        )
+        await state.clear()
 
-        await asyncio.sleep(0.2)
-
-    await asyncio.sleep(1)
-    await bot.delete_message(chat_id=message.chat.id, message_id=sending_msg.message_id)
-    await message.reply(
-        "🏁Ваш документ был успешно отправлен! Возвращаю вас в меню.",
-        reply_markup=main_kb(message.from_user.id),
-    )
-    # End sending
-    # Clear state
     await state.clear()
 
 
