@@ -1,7 +1,10 @@
-from utils.excel_parser_utils import *
+from utils.excel_helpers.excel_parser_utils import *
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from icecream import ic
+import pandas as pd
+from typing import List
+from utils.excel_helpers.data import correct_header_data
 
 ic.configureOutput(prefix="LOGS| ")
 ic.disable()
@@ -113,6 +116,42 @@ def transform_pipeline(input, output):
 
     except Exception as e:
         return True, f"Произошла ошибка при сохранении файла. {e}"
+
+
+def check_correct_header(file_path: str, correct_headers: List[str]):
+    try:
+        xls = pd.ExcelFile(file_path)
+        df = pd.read_excel(xls, xls.sheet_names[0])
+        xls_headers = [header.strip().lower() for header in df.columns]
+        missing = {}
+
+        for i, correct_header in enumerate(correct_headers):
+            if correct_header.lower() not in xls_headers:
+                missing[get_column_letter(i + 1)] = correct_header
+
+        if missing:
+            missing = [
+                f"<b>{column}</b>: <i>{name}</i>\n" for column, name in missing.items()
+            ]
+            return (
+                False,
+                f"Ошибка возникает, если программа не обнаруживает точного названия столбца в документе. Возможно, требуемый столбец отсутствует или его название содержит опечатку.\n\n<b>Остуствуют столбцы:</b>\n{''.join(missing)}",
+            )
+
+        return True, ""
+    except Exception as e:
+        return (
+            False,
+            f"Произошла ошибка на стороне сервера.\n<b>nОписание ошибки:<b> <code>{e}</code>",
+        )
+
+
+def check_document_by_option(
+    file_path: str,
+    category: str,
+    correct_headers_data: List[str] = correct_header_data,
+):
+    return check_correct_header(file_path, correct_headers_data[category])
 
 
 def process_document_by_option(input: str, output: str, category: str):

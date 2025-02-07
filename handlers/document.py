@@ -9,6 +9,7 @@ import os
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import goback_actions_kb, main_loader_kb
 from create_bot import bot, download_dir, upload_notification_recievers
+from utils.excel_helpers.checker import check_document_by_option
 
 
 document_router = Router()
@@ -140,13 +141,24 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
         print(f"СОХРАНЕНИЕ ФАЙЛА - ОШИБКА: {e}")
 
     # End download process
+    # Getting state
     data = await state.get_data()
+    option = data.get("option")
 
-    # result = process_document_by_option(
-    #     local_file_path, local_file_path, data.get("option")
-    # )
+    # 1 - Checking for correct headers
+    result, error_msg = check_document_by_option(local_file_path, category=option)
+    if not result:
+        print(
+            f"❌ Возникла проблема при проверке документа.\n\n{error_msg}\nℹ️ Пожалуйста, отправьте новый документ следующим сообщением"
+        )
+        await message.answer(
+            f"❌ Возникла проблема при проверке документа.\n\n{error_msg}\nℹ️ Пожалуйста, отправьте новый документ следующим сообщением",
+            reply_markup=goback_actions_kb(),
+        )
+        return
+
+    # Sending ...
     caption_message = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {message.from_user.full_name}, @{message.from_user.username or 'не указан'}"
-
     num_reciever_users = len(upload_notification_recievers)
     sending_text = f"Отправляю документ...\nСтатус: {'⚪️' * num_reciever_users}"
     sending_msg = await message.answer(text=sending_text)
@@ -182,6 +194,8 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
         "🏁Ваш документ был успешно отправлен! Возвращаю вас в меню.",
         reply_markup=main_kb(message.from_user.id),
     )
+    # End sending
+    # Clear state
     await state.clear()
 
 
