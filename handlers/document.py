@@ -3,13 +3,11 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
-import asyncio
-import os
-
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import goback_actions_kb, main_loader_kb
-from create_bot import bot, download_dir, upload_notification_recievers
+from create_bot import bot, upload_notification_recievers
 from utils.excel_helpers.checker import check_document_by_option
+from utils.helpers import download_document, send_document
 
 
 document_router = Router()
@@ -116,6 +114,7 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
         await bot.delete_message(
             chat_id=message.chat.id, message_id=bot_invalid_filef_msg_id
         )
+
     if not message.document.file_name.endswith((".xlsx", ".xlsm", ".xltx", ".xltm")):
         await message.delete()
         new_msg = await message.answer(
@@ -131,26 +130,11 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
     file_name = message.document.file_name
 
     # Downloading
-    try:
-        downloaded_file = await bot.download_file(file_path)
-        os.makedirs(download_dir, exist_ok=True)
-        local_file_path = os.path.join(download_dir, f"{file_name}")
-        with open(local_file_path, "wb") as new_file:
-            new_file.write(downloaded_file.read())
-    except Exception as e:
-        print(f"СОХРАНЕНИЕ ФАЙЛА - ОШИБКА: {e}")
-
-    # End download process
-    # Getting state
-    data = await state.get_data()
-    option = data.get("option")
+    local_file_path = await download_document(bot, file_path, file_name)
 
     # 1 - Checking for correct headers
-    result, error_msg = check_document_by_option(local_file_path, category=option)
+    result, error_msg = check_document_by_option(local_file_path, category=dshb_name)
     if not result:
-        print(
-            f"❌ Возникла проблема при проверке документа.\n\n{error_msg}\nℹ️ Пожалуйста, отправьте новый документ следующим сообщением"
-        )
         await message.answer(
             f"❌ Возникла проблема при проверке документа.\n\n{error_msg}\nℹ️ Пожалуйста, отправьте новый документ следующим сообщением",
             reply_markup=goback_actions_kb(),
@@ -158,7 +142,9 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
         return
 
     # Sending ...
-    caption_message = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {message.from_user.full_name}, @{message.from_user.username or 'не указан'}"
+    caption_text = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {message.from_user.full_name}, @{message.from_user.username or 'не указан'}"
+    users_ids_without_send = await send_document(file_id, message, caption_text)
+    user_names = ["Без базы данных упоминнание по id недоступно"]
     num_reciever_users = len(upload_notification_recievers)
     sending_text = f"Отправляю документ...\nСтатус: {'⚪️' * num_reciever_users}"
     sending_msg = await message.answer(text=sending_text)
