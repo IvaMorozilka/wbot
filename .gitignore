@@ -1,4 +1,5 @@
 .env
 .txt
+*.ipynb
 __pycache__/
 *.xlsx
