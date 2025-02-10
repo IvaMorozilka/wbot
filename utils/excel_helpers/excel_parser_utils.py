@@ -235,7 +235,7 @@ def process_header(sheet):
     if columns_to_delete > 0:
         # Удаляем лишние столбцы слева от "Итого"
         sheet.delete_cols(start_col, columns_to_delete)
-    
+
     return True, ""
 
     # if columns_to_keep == 2:
