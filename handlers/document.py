@@ -16,114 +16,60 @@ from handlers.states import States
 document_router = Router()
 
 
-class DocumentProcessing(StatesGroup):
-    waiting_for_option = State()
-    waiting_for_document = State()
-
-
-@document_router.callback_query(F.data == "change_mind")
+@document_router.callback_query(F.data.in_({"back"}))
 async def process_change_mind(call: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    bot_error_msg_id = data.get("bot_error_msg_id")
-
-    await call.message.delete()
-    if bot_error_msg_id:
-        await call.bot.delete_message(
-            chat_id=call.message.chat.id, message_id=bot_error_msg_id
+    if call.data == "back":
+        await call.message.answer(
+            "Выберите дашборд, для которого вы хотите загрузить данные:",
+            reply_markup=main_loader_kb(),
         )
-    back_msg = await call.message.answer(
-        text="Возвращаю вас в меню.", reply_markup=main_kb(call.from_user.id)
-    )
-    await state.clear()
-    await state.update_data(bot_back_msg_id=back_msg.message_id)
+        await call.answer()
+        await state.set_state(States.waiting_for_option)
 
 
-@document_router.message(F.text, DocumentProcessing.waiting_for_option)
-async def process_option_choice(message: Message):
-    await message.delete()
-
-
-@document_router.message(F.document, DocumentProcessing.waiting_for_option)
+@document_router.message(~F.data, States.waiting_for_option)
 async def process_option_choice(message: Message, state: FSMContext):  # noqa: F811
-    data = await state.get_data()
-    bot_early_doc_msg_id = data.get("bot_early_doc_msg_id")
-
-    await message.delete()
-    if bot_early_doc_msg_id:
-        await bot.delete_message(message.chat.id, bot_early_doc_msg_id)
-        await state.update_data(bot_early_doc_msg_id=None)
-
-    new_msg = await message.answer(
-        text="⬆️Сначала выберите тип дашборда для загрузки данных."
-    )
-    await state.update_data(bot_early_doc_msg_id=new_msg.message_id)
+    await message.reply(text="⬆️Я жду, пока вы выберете дашборд")
+    await state.update_data(States.waiting_for_option)
 
 
-@document_router.callback_query(F.data, DocumentProcessing.waiting_for_option)
+@document_router.callback_query(F.data.in_(dashboard_names), States.waiting_for_option)
 async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa: F811
-    data = await state.get_data()
-    bot_early_doc_msg_id = data.get("bot_early_doc_msg_id")
-
-    if bot_early_doc_msg_id:
-        await bot.delete_message(call.message.chat.id, bot_early_doc_msg_id)
-        await state.update_data(bot_early_doc_msg_id=None)
-
     option_name = call.data
     await state.update_data(option=option_name)
-    await call.message.edit_text(
-        text=f"Выбран дашборд <b>{option_name}</b>. Отправьте документ вложением, в следующем сообщении.",
+    await call.answer()
+    await call.message.answer(
+        text=f"Выбран дашборд <b>{option_name}</b>.\nПрикрепите 🧷 документ 📄 в следующем сообщении ⬇️",
         reply_markup=goback_actions_kb(),
     )
-    await state.set_state(DocumentProcessing.waiting_for_document)
+    await state.set_state(States.waiting_for_document)
 
 
 @document_router.callback_query(
-    F.data == "back", DocumentProcessing.waiting_for_document
+    F.data.in_(dashboard_names), States.waiting_for_document
 )
-async def process_back_button(call: CallbackQuery, state: FSMContext):
+async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa: F811
     data = await state.get_data()
-    bot_error_msg_id = data.get("bot_error_msg_id")
-    if bot_error_msg_id:
-        await call.bot.delete_message(
-            chat_id=call.message.chat.id, message_id=bot_error_msg_id
-        )
-    await call.message.edit_text(
-        "Выберите дашборд, для которого вы хотите загрузить данные:",
-        reply_markup=main_loader_kb(),
-    )
-    await state.update_data(bot_error_msg_id=None)
-    await state.set_state(DocumentProcessing.waiting_for_option)
+    option = data.get("option")
+    await call.answer(f"Вы уже выбрали {option}. Жду от вас документа.")
+    await state.set_state(States.waiting_for_document)
 
 
-@document_router.message(~F.document, DocumentProcessing.waiting_for_document)
+@document_router.message(~F.document, States.waiting_for_document)
 async def process_document(message: Message, state: FSMContext):
-    data = await state.get_data()
-    bot_error_msg_id = data.get("bot_error_msg_id")
-    await message.delete()
-    if bot_error_msg_id:
-        await bot.delete_message(chat_id=message.chat.id, message_id=bot_error_msg_id)
-    error_message = await message.answer("Пожалуйста, отправьте документ.")
-    await state.update_data(bot_error_msg_id=error_message.message_id)
-    await state.set_state(DocumentProcessing.waiting_for_document)
+    await message.reply("Это не похоже на документ. Повторите отправку.")
+    await state.set_state(States.waiting_for_document)
 
 
-@document_router.message(F.document, DocumentProcessing.waiting_for_document)
+@document_router.message(F.document, States.waiting_for_document)
 async def process_document(message: Message, state: FSMContext):  # noqa: F811
     data = await state.get_data()
     dshb_name = data.get("option")
-    bot_invalid_filef_msg_id = data.get("bot_invalid_filef_msg_id")
-
-    if bot_invalid_filef_msg_id:
-        await bot.delete_message(
-            chat_id=message.chat.id, message_id=bot_invalid_filef_msg_id
-        )
 
     if not message.document.file_name.endswith((".xlsx", ".xlsm", ".xltx", ".xltm")):
-        await message.delete()
-        new_msg = await message.answer(
-            "Пожалуйста, отправьте файл в формате таблиц Excel. \nℹ️Поддерживаемые расширения файлов xlsx/xlsm/xltx/xltm"
+        await message.reply(
+            "Пожалуйста, отправьте файл в формате таблиц Excel.\nℹ️Поддерживаемые расширения файлов xlsx/xlsm/xltx/xltm"
         )
-        await state.update_data(bot_invalid_filef_msg_id=new_msg.message_id)
         return
 
     # Getting file info
@@ -133,8 +79,10 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
     file_name = message.document.file_name
 
     # Downloading
-    local_file_path = await download_document(bot, file_path, file_name)
+    print("DOWN")
+    local_file_path = await download_document(bot, file_path, file_name, dshb_name)
 
+    # Cheking + processing stage
     # 1 - Checking for correct headers
     result, error_msg = check_document_by_option(local_file_path, category=dshb_name)
     if not result:
@@ -152,9 +100,9 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
 
     if len(users_ids_without_send) == num_reciever_users:
         await message.answer(
-            "🔴При отправке документа произошла ошибка, документ не был отправлен."
+            "🔴При отправке документа произошла ошибка, документ не был отправлен.\nПопробуйте отправить документ еще раз. Если он так же не будет отправлен, обратитесь в поддержку."
         )
-        await state.set_state(DocumentProcessing.waiting_for_option)
+        return
     elif len(users_ids_without_send) != 0:
         await message.reply(
             f"🟡Документ был отправлен всем, кроме:\n({'\n'.join(user_names)})"
@@ -168,6 +116,21 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
         await state.clear()
 
     await state.clear()
+
+
+@document_router.callback_query(F.data)
+async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa: F811
+    await call.answer("Начните с выбора пункта меню")
+
+
+@document_router.error(
+    ExceptionTypeFilter(TelegramBadRequest), F.update.message.as_("message")
+)
+async def handle_big_file_size(event: ErrorEvent, message: Message):
+    if str(event.exception).endswith("file is too big"):
+        await message.reply(
+            "Размер вашего файла больше <b>20МБ</b> 👀. Это ограничение Telegram API. Жду документа меньшего размера.",
+        )
 
 
 # @document_router.message(F.document)
