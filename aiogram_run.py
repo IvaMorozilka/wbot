@@ -24,7 +24,7 @@ async def start_bot():
 async def main():
     # scheduler.add_job(send_time_msg, 'interval', seconds=10)
     # scheduler.start()
-    dp.include_routers(commands_router, document_router, menu_router)
+    dp.include_routers(commands_router, menu_router, document_router)
     dp.startup.register(start_bot)
     try:
         await bot.delete_webhook(drop_pending_updates=True)
