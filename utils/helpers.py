@@ -6,11 +6,17 @@ import asyncio
 from create_bot import download_dir, upload_notification_recievers, bot
 
 
-async def download_document(bot: Bot, file_path: str, file_name: str) -> str:
+async def download_document(
+    bot: Bot, file_path: str, file_name: str, option: str
+) -> str:
     try:
         downloaded_file = await bot.download_file(file_path)
+        # Создаем папку для загрузок
         os.makedirs(download_dir, exist_ok=True)
-        local_file_path = os.path.join(download_dir, f"{file_name}")
+        local_file_path = os.path.join(download_dir, option)
+        # Создаем папку с именем дашборда
+        os.makedirs(local_file_path, exist_ok=True)
+        local_file_path = os.path.join(local_file_path, f"{file_name}")
         with open(local_file_path, "wb") as new_file:
             new_file.write(downloaded_file.read())
         return local_file_path
