@@ -5,7 +5,7 @@ from create_bot import admins
 
 def main_kb(user_id):
     kb_list = [
-        [KeyboardButton(text="⬇️Загрузить данные для дашборда")],
+        [KeyboardButton(text="⬇️Загрузить данные")],
         [KeyboardButton(text="🛟Поддержка")],
     ]
 
@@ -16,6 +16,6 @@ def main_kb(user_id):
         keyboard=kb_list,
         resize_keyboard=True,
         one_time_keyboard=False,
-        input_field_placeholder="Выберите категорию:",
+        input_field_placeholder="Выберите пункт",
     )
     return keyboard
