@@ -133,8 +133,11 @@ def check_correct_header(file_path: str, correct_headers: List[str]):
 
         if missing:
             missing = [
-                f"<b>{column}</b>: <i>{name}</i>\n" for column, name in missing.items()
+                f"<b>{column}</b>: <code>{name}</code>\n"
+                for column, name in missing.items()
             ]
+            xls.close()
+            os.remove(file_path)
             return (
                 False,
                 f"Ошибка возникает, если программа не обнаруживает точного названия столбца в документе. Возможно, требуемый столбец отсутствует или его название содержит опечатку.\n\n<b>Остуствуют столбцы:</b>\n{''.join(missing)}",
@@ -142,6 +145,9 @@ def check_correct_header(file_path: str, correct_headers: List[str]):
 
         return True, ""
     except Exception as e:
+        if os.path.isfile(file_path):
+            xls.close()
+            os.remove(file_path)
         return (
             False,
             f"Произошла ошибка на стороне сервера.\n<b>nОписание ошибки:<b> <code>{e}</code>",
