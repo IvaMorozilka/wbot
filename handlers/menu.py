@@ -9,7 +9,7 @@ from keyboards.all_kb import main_kb
 menu_router = Router()
 
 
-@menu_router.message(F.text == "⬇️Загрузить данные для дашборда")
+@menu_router.message(F.text == "⬇️Загрузить данные")
 async def show_upload_options(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
