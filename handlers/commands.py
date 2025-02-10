@@ -1,12 +1,10 @@
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import Message
+
 from keyboards.all_kb import main_kb
-from keyboards.inline_kbs import main_loader_kb
 from aiogram.fsm.context import FSMContext
 
-from filters.admin_check import IsAdmin
-from create_bot import admins
 
 commands_router = Router()
 

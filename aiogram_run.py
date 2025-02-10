@@ -1,9 +1,10 @@
 import asyncio
+from aiogram.types import BotCommand, BotCommandScopeDefault
+
 from create_bot import bot, dp, scheduler  # noqa: F401
 from handlers.commands import commands_router
 from handlers.document import document_router
 from handlers.menu import menu_router
-from aiogram.types import BotCommand, BotCommandScopeDefault
 
 
 # from work_time.time_func import send_time_msg

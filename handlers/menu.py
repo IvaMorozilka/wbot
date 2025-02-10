@@ -1,11 +1,10 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from keyboards.all_kb import main_kb
-from keyboards.inline_kbs import main_loader_kb
 from aiogram.fsm.context import FSMContext
-from handlers.document import DocumentProcessing
+from handlers.states import States
 
-from create_bot import bot
+from keyboards.inline_kbs import main_loader_kb
+from keyboards.all_kb import main_kb
 
 menu_router = Router()
 
