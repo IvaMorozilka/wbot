@@ -1,10 +1,12 @@
-from aiogram import Router, F
-from aiogram.types import Message
+from aiogram import Router, F, Bot
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from handlers.states import States
 
-from keyboards.inline_kbs import main_loader_kb
+from keyboards.inline_kbs import main_loader_kb, generate_settings_kb
 from keyboards.all_kb import main_kb
+from utils.data import MenuCallback, menu_structure
+from create_bot import admins
 
 menu_router = Router()
 
@@ -30,6 +32,44 @@ async def show_support_options(message: Message):
 @menu_router.message(F.text == "⚙️Настройки")
 async def show_settings(message: Message):
     await message.answer(
-        text="Данная функция пока не доступна. ☹",
-        reply_markup=main_kb(message.from_user.id),
+        text="Настройки:",
+        reply_markup=generate_settings_kb("main"),
+    )
+
+
+@menu_router.callback_query(MenuCallback.filter(F.option == "main"))
+async def back_to_main_menu(call: CallbackQuery, callback_data: MenuCallback):
+    await call.message.edit_text(
+        text="Главное меню", reply_markup=generate_settings_kb("main")
+    )
+
+
+@menu_router.callback_query(MenuCallback.filter(F.level == "main"))
+async def main_menu(call: CallbackQuery, callback_data: MenuCallback):
+    if callback_data.option == "show":
+        await call.message.edit_text(
+            text="Просмотр", reply_markup=generate_settings_kb(callback_data.option)
+        )
+
+
+@menu_router.callback_query(
+    MenuCallback.filter(F.level == "show" and F.option == "back")
+)
+async def go_back(call: CallbackQuery):
+    await call.message.edit_text(
+        text="Просмотр", reply_markup=generate_settings_kb("show")
+    )
+
+
+@menu_router.callback_query(MenuCallback.filter(F.level == "show"))
+async def show_menu(call: CallbackQuery, callback_data: MenuCallback, bot: Bot):
+    print(callback_data)
+    if callback_data.option == "admins":
+        await call.message.edit_text(text="Показал администраторов")
+    elif callback_data.option == "recievers":
+        await call.message.edit_text(text="Показал получателей")
+    else:
+        await call.message.edit_text(text="Показал кого то еще")
+    await call.message.edit_reply_markup(
+        reply_markup=generate_settings_kb("show", True)
     )

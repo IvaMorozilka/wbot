@@ -1,3 +1,5 @@
+from aiogram.filters.callback_data import CallbackData
+
 # Названия кнопок по дашбордам
 dashboard_names = [
     "АИП",
@@ -11,3 +13,22 @@ dashboard_names = [
     "Новый ФНС",
     "Импортозамещение",
 ]
+
+
+# Менюшка
+class MenuCallback(CallbackData, prefix="menu"):
+    level: str
+    option: str
+
+
+menu_structure = {
+    "main": {
+        "Просмотр": "show",
+    },
+    "show": {
+        "Админы": "admins",
+        "Получатели": "recievers",
+        "Белый список": "whitelist",
+        "Назад": "main",
+    },
+}
