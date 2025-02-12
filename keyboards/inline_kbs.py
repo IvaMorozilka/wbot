@@ -8,19 +8,14 @@ def main_loader_kb():
     builder = InlineKeyboardBuilder()
     for name in dashboard_names:
         builder.button(text=name, callback_data=name)
-    # builder.button(text="Обратно в меню", callback_data="goto_menu")
-    builder.adjust(1)
+    builder.adjust(3, 3, 1, 1, 1, 1)
     return builder.as_markup()
 
 
 def goback_actions_kb():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Обратно, к выбору дашборда", callback_data="back"
-                )
-            ],
+            [InlineKeyboardButton(text="Отменить выбор", callback_data="back")],
             # [InlineKeyboardButton(text="Обратно в меню", callback_data="goto_menu")],
         ]
     )

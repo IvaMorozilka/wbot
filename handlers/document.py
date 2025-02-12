@@ -1,5 +1,11 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, ErrorEvent
+from aiogram.types import (
+    Message,
+    CallbackQuery,
+    ErrorEvent,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import ExceptionTypeFilter
 from aiogram.fsm.context import FSMContext
@@ -19,7 +25,7 @@ document_router = Router()
 @document_router.callback_query(F.data.in_({"back"}))
 async def process_change_mind(call: CallbackQuery, state: FSMContext):
     if call.data == "back":
-        await call.message.answer(
+        await call.message.edit_text(
             "Выберите дашборд, для которого вы хотите загрузить данные:",
             reply_markup=main_loader_kb(),
         )
@@ -37,8 +43,13 @@ async def process_option_choice(message: Message, state: FSMContext):  # noqa: F
 async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa: F811
     option_name = call.data
     await state.update_data(option=option_name)
+
+    if option_name != "Гумманитарная помощь СВО":
+        await call.answer("Доступен только Гумманитарная помощь СВО")
+        return
+
     await call.answer()
-    await call.message.answer(
+    await call.message.edit_text(
         text=f"Выбран дашборд <b>{option_name}</b>.\nПрикрепите 🧷 документ 📄 в следующем сообщении ⬇️",
         reply_markup=goback_actions_kb(),
     )
@@ -78,8 +89,7 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
     file_path = file.file_path
     file_name = message.document.file_name
 
-    # Downloading
-    print("DOWN")
+    # Downloading to local path
     local_file_path = await download_document(bot, file_path, file_name, dshb_name)
 
     # Cheking + processing stage
@@ -88,7 +98,17 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
     if not result:
         await message.answer(
             f"❌ Возникла проблема при проверке документа.\n\n{error_msg}\nℹ️ Пожалуйста, отправьте новый документ следующим сообщением",
-            reply_markup=goback_actions_kb(),
+            reply_markup=(
+                InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(
+                                text="Вернуться к выбору", callback_data="back"
+                            )
+                        ]
+                    ]
+                )
+            ),
         )
         return
 
