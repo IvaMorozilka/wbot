@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: user
+      POSTGRES_DB: db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  bot:
+    build: .
+    restart: always
+    environment:
+      DATABASE_URL: postgres://your_user:your_password@postgres:5432/your_database
+      TOKEN: ${TOKEN}
+      ADMINS: ${ADMINS}
+      TEMP: ${TEMP}
+      UPLOAD_NOTIFICATION_RECEIVERS: ${UPLOAD_NOTIFICATION_RECEIVERS}
+      PROXY_URL: ${PROXY_URL}
+      DEV: ${DEV}
+
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
