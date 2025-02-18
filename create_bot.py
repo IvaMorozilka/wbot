@@ -7,6 +7,7 @@ from decouple import config
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import os
 from aiogram.client.session.aiohttp import AiohttpSession
+from asyncpg_lite import DatabaseManager
 
 session = None
 if not config("DEV"):
@@ -17,6 +18,13 @@ admins = [int(admin_id) for admin_id in config("ADMINS").split(",")]
 upload_notification_recievers = [
     int(user_id) for user_id in config("UPLOAD_NOTIFICATION_RECEIVERS").split(",")
 ]
+# DB
+pg_manager = DatabaseManager(
+    db_url="postgresql://user:user@host.docker.internal:5432/db",
+    deletion_password="bob",
+    log_level="DEBUG",
+    echo=True,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
