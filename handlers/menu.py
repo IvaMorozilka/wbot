@@ -63,13 +63,16 @@ async def go_back(call: CallbackQuery):
 
 @menu_router.callback_query(MenuCallback.filter(F.level == "show"))
 async def show_menu(call: CallbackQuery, callback_data: MenuCallback, bot: Bot):
-    print(callback_data)
     if callback_data.option == "admins":
-        await call.message.edit_text(text="Показал администраторов")
+        await call.message.edit_text(
+            text="Показал администраторов",
+            reply_markup=generate_settings_kb("show", True),
+        )
     elif callback_data.option == "recievers":
-        await call.message.edit_text(text="Показал получателей")
+        await call.message.edit_text(
+            text="Показал получателей", reply_markup=generate_settings_kb("show", True)
+        )
     else:
-        await call.message.edit_text(text="Показал кого то еще")
-    await call.message.edit_reply_markup(
-        reply_markup=generate_settings_kb("show", True)
-    )
+        await call.message.edit_text(
+            text="Показал кого то еще", reply_markup=generate_settings_kb("show", True)
+        )
