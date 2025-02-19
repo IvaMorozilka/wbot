@@ -138,11 +138,6 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
     await state.clear()
 
 
-@document_router.callback_query(F.data)
-async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa: F811
-    await call.answer("Начните с выбора пункта меню")
-
-
 @document_router.error(
     ExceptionTypeFilter(TelegramBadRequest), F.update.message.as_("message")
 )
