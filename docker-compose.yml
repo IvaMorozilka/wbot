@@ -14,6 +14,8 @@ services:
   bot:
     build: .
     restart: always
+    volumes:
+      - .:/app
     environment:
       DATABASE_URL: postgres://your_user:your_password@postgres:5432/your_database
       TOKEN: ${TOKEN}
