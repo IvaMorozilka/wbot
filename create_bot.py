@@ -9,6 +9,7 @@ import os
 from aiogram.client.session.aiohttp import AiohttpSession
 from asyncpg_lite import DatabaseManager
 
+
 session = None
 if not config("DEV"):
     session = AiohttpSession(proxy=config("PROXY_URL"))
@@ -22,8 +23,8 @@ upload_notification_recievers = [
 pg_manager = DatabaseManager(
     db_url="postgresql://user:user@host.docker.internal:5432/db",
     deletion_password="bob",
-    log_level="DEBUG",
-    echo=True,
+    log_level="INFO",
+    echo=False,
 )
 
 logging.basicConfig(
