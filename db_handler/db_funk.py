@@ -26,6 +26,10 @@ async def create_users_table():
             "name": "full_name",
             "type": Text,
         },
+        {
+            "name": "org_name",
+            "type": Text,
+        },
         {"name": "admin", "type": Boolean},
     ]
     async with pg_manager:
@@ -65,7 +69,7 @@ async def create_documents_table():
 
 
 async def get_user_info(user_id: int):
-    with pg_manager:
+    async with pg_manager:
         user_info = await pg_manager.select_data(
             table_name="users",
             where_dict={"user_id": user_id},
@@ -77,9 +81,8 @@ async def get_user_info(user_id: int):
             return None
 
 
-async def insert_user(user_id: int, user_data: dict):
-    with pg_manager:
+async def insert_user(user_data: dict):
+    async with pg_manager:
         await pg_manager.insert_data_with_update(
-            table_name="users",
-            records_data=user_data,
+            table_name="users", records_data=user_data, conflict_column="user_id"
         )
