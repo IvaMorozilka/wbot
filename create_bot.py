@@ -21,8 +21,8 @@ upload_notification_recievers = [
 ]
 # DB
 pg_manager = DatabaseManager(
-    db_url="postgresql://user:user@host.docker.internal:5432/db",
-    deletion_password="bob",
+    db_url=config("DATABASE_URL"),
+    deletion_password=config("DEL_PASWD"),
     log_level="INFO",
     echo=False,
 )
