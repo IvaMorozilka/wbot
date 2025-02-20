@@ -3,9 +3,9 @@ services:
     image: postgres:alpine
     restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: user
-      POSTGRES_DB: db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -21,7 +21,7 @@ services:
     volumes:
       - .:/app
     environment:
-      DATABASE_URL: postgres://your_user:your_password@postgres:5432/your_database
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       TOKEN: ${TOKEN}
       ADMINS: ${ADMINS}
       TEMP: ${TEMP}
