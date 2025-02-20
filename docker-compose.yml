@@ -12,7 +12,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   bot:
-    build: .
+    build:
+      args:
+        - HTTPP_PROXY=${PROXY_URL}
+        - HTPPS_PROXY=${PROXY_URL}
     restart: always
     volumes:
       - .:/app
