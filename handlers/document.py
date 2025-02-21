@@ -12,11 +12,12 @@ from aiogram.fsm.context import FSMContext
 
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import goback_actions_kb, main_loader_kb
-from create_bot import bot, upload_notification_recievers
+from create_bot import bot
 from utils.excel_helpers.checker import check_document_by_option
 from utils.helpers import download_document, send_document
 from utils.data import dashboard_names
 from handlers.states import States
+from db_handler.db_funk import get_user_info
 
 
 document_router = Router()
@@ -113,12 +114,14 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
         return
 
     # Sending ...
-    caption_text = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {message.from_user.full_name}, @{message.from_user.username or 'не указан'}"
-    users_ids_without_send = await send_document(file_id, message, caption_text)
-    user_names = ["Без базы данных упоминнание по id недоступно"]
-    num_reciever_users = len(upload_notification_recievers)
+    user_info = await get_user_info(message.from_user.id)
+    caption_text = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {user_info['full_name']}, @{message.from_user.username or 'не указан'}\n<b>Организация:</b> {user_info['org_name']}"
+    total_users, users_ids_without_send = await send_document(
+        file_id, message, caption_text
+    )
+    user_names = ["Скоро будет. Пока неизвестно"]
 
-    if len(users_ids_without_send) == num_reciever_users:
+    if len(users_ids_without_send) == total_users:
         await message.answer(
             "🔴При отправке документа произошла ошибка, документ не был отправлен.\nПопробуйте отправить документ еще раз. Если он так же не будет отправлен, обратитесь в поддержку."
         )

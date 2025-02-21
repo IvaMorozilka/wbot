@@ -3,7 +3,8 @@ from aiogram.types import Message
 import os
 import asyncio
 
-from create_bot import download_dir, upload_notification_recievers, bot
+from create_bot import download_dir, bot
+from db_handler.db_funk import get_recievers
 
 
 async def download_document(
@@ -34,7 +35,8 @@ async def send_document(
     delete_message_timeout: int = 1,
     show_progress: bool = True,
 ):
-    num_reciever_users = len(upload_notification_recievers)
+    recievers = await get_recievers()
+    num_reciever_users = len(recievers)
     sending_text = f"🛫 Отправляю документ...\nПрогресс: {'⚪️' * num_reciever_users}"
     if not show_progress:
         sending_text = sending_text.split("\n")[0]
@@ -42,7 +44,7 @@ async def send_document(
     sending_msg = await message.answer(text=sending_text)
     ids_without_send = []
 
-    for user_id in upload_notification_recievers:
+    for user_id in [reciever["chat_id"] for reciever in recievers]:
         try:
             await bot.send_document(
                 chat_id=user_id,  # ID чата пользователя
@@ -72,4 +74,4 @@ async def send_document(
     await asyncio.sleep(delete_message_timeout)
     await bot.delete_message(chat_id=message.chat.id, message_id=sending_msg.message_id)
 
-    return ids_without_send
+    return num_reciever_users, ids_without_send
