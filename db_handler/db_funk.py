@@ -31,6 +31,7 @@ async def create_users_table():
             "type": Text,
         },
         {"name": "admin", "type": Boolean},
+        {"name": "reciever", "type": Boolean},
     ]
     async with pg_manager:
         await pg_manager.create_table(table_name="users", columns=columns)
@@ -62,7 +63,6 @@ async def create_documents_table():
             "name": "period",
             "type": Text,
         },
-        {"name": "admin", "type": Boolean},
     ]
     async with pg_manager:
         await pg_manager.create_table(table_name="documnets", columns=columns)
@@ -79,6 +79,24 @@ async def get_user_info(user_id: int):
             return user_info
         else:
             return None
+
+
+async def get_admins():
+    async with pg_manager:
+        admins_info = await pg_manager.select_data(
+            table_name="users",
+            where_dict={"admin": True},
+        )
+        return admins_info
+
+
+async def get_recievers():
+    async with pg_manager:
+        recievers_info = await pg_manager.select_data(
+            table_name="users",
+            where_dict={"reciever": True},
+        )
+        return recievers_info
 
 
 async def insert_user(user_data: dict):
