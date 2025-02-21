@@ -1,11 +1,11 @@
 import logging
+import os
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from decouple import config
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import os
 from aiogram.client.session.aiohttp import AiohttpSession
 from asyncpg_lite import DatabaseManager
 
@@ -15,10 +15,8 @@ if not config("DEV"):
     session = AiohttpSession(proxy=config("PROXY_URL"))
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-admins = [int(admin_id) for admin_id in config("ADMINS").split(",")]
-upload_notification_recievers = [
-    int(user_id) for user_id in config("UPLOAD_NOTIFICATION_RECEIVERS").split(",")
-]
+ADMINS = [int(admin_id) for admin_id in config("ADMINS").split(",")]
+secret_key = config("AUTH_KEY")
 # DB
 pg_manager = DatabaseManager(
     db_url=config("DATABASE_URL"),
