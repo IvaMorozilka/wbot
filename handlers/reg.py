@@ -8,9 +8,8 @@ from aiogram.types import (
 
 from keyboards.all_kb import main_kb
 from aiogram.fsm.context import FSMContext
-from db_handler.db_funk import get_user_info, insert_user
+from db_handler.db_funk import insert_user
 from handlers.states import States
-from filters.user_auth_check import IsAuthorized, users_cache
 from create_bot import secret_key, ADMINS
 
 

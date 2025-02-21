@@ -1,5 +1,4 @@
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.storage.base import BaseStorage
 
 
 class States(StatesGroup):
