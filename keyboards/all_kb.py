@@ -1,16 +1,12 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
-from create_bot import admins
-
 
 def main_kb(user_id):
     kb_list = [
         [KeyboardButton(text="⬇️Загрузить данные")],
         [KeyboardButton(text="🛟Поддержка")],
+        [KeyboardButton(text="⚙️Настройки")],
     ]
-
-    if user_id in admins:
-        kb_list.append([KeyboardButton(text="⚙️Настройки")])
 
     keyboard = ReplyKeyboardMarkup(
         keyboard=kb_list,
