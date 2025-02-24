@@ -16,7 +16,6 @@ if not config("DEV"):
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 ADMINS = [int(admin_id) for admin_id in config("ADMINS").split(",")]
-secret_key = config("AUTH_KEY")
 # DB
 pg_manager = DatabaseManager(
     db_url=config("DATABASE_URL"),

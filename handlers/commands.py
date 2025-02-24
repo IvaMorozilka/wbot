@@ -4,7 +4,7 @@ from aiogram.types import Message
 
 from keyboards.all_kb import main_kb
 from aiogram.fsm.context import FSMContext
-from db_handler.db_funk import get_user_info
+from db_handler.db_funk import get_user_info, get_request_info
 from handlers.states import States
 
 commands_router = Router()
@@ -20,8 +20,23 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
             reply_markup=main_kb(message.from_user.id),
         )
     else:
-        await message.answer("Введите код авторизации 🔐")
-        await state.set_state(States.form_auth_key)
+        user_info = await get_request_info(message.from_user.id)
+        if user_info:
+            status = user_info.get("status")
+            if status == 0:
+                await message.answer(
+                    "Ваша заявка находиться на рассмотрении 🔎\nОжидайте уведомления."
+                )
+            elif status == 2:
+                await message.answer("Ваша заявка была отклонена 😔")
+        else:
+            await message.answer(
+                "Для начала вам стоит зарегистрироваться ✍\nПосле рассмотрения вашей заявки, вы сможете загружать данные для дашбордов."
+            )
+            await message.answer(
+                "Отправьте свое полное ФИО, например: Иванов Иван Иванович"
+            )
+            await state.set_state(States.form_full_name)
 
 
 @commands_router.message(Command("restart"))

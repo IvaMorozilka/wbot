@@ -1,7 +1,5 @@
 from create_bot import pg_manager
-from sqlalchemy import BigInteger, Text, Boolean, DateTime
-from typing import List
-import asyncio
+from sqlalchemy import BigInteger, Text, Boolean, DateTime, Integer
 
 
 async def create_users_table():
@@ -13,10 +11,6 @@ async def create_users_table():
                 "primary_key": True,
                 "unique": True,
             },
-        },
-        {
-            "name": "chat_id",
-            "type": BigInteger,
         },
         {
             "name": "username",
@@ -31,10 +25,40 @@ async def create_users_table():
             "type": Text,
         },
         {"name": "admin", "type": Boolean},
-        {"name": "reciever", "type": Boolean},
     ]
     async with pg_manager:
         await pg_manager.create_table(table_name="users", columns=columns)
+
+
+async def create_reg_requests_table():
+    columns = [
+        {
+            "name": "user_id",
+            "type": BigInteger,
+            "options": {
+                "primary_key": True,
+                "unique": True,
+            },
+        },
+        {
+            "name": "username",
+            "type": Text,
+        },
+        {
+            "name": "full_name",
+            "type": Text,
+        },
+        {
+            "name": "org_name",
+            "type": Text,
+        },
+        {"name": "admin", "type": Boolean},
+        # 0 - pending, 1 - accepted, 2 - rejected
+        {"name": "status", "type": Integer},
+        {"name": "processed", "type": Boolean},
+    ]
+    async with pg_manager:
+        await pg_manager.create_table(table_name="requests", columns=columns)
 
 
 async def create_documents_table():
@@ -104,3 +128,34 @@ async def insert_user(user_data: dict):
         await pg_manager.insert_data_with_update(
             table_name="users", records_data=user_data, conflict_column="user_id"
         )
+
+
+async def send_registration_request(user_data: dict):
+    async with pg_manager:
+        await pg_manager.insert_data_with_update(
+            table_name="requests", records_data=user_data, conflict_column="user_id"
+        )
+
+
+async def get_request_info(user_id: int):
+    async with pg_manager:
+        request_info = await pg_manager.select_data(
+            table_name="requests",
+            where_dict={"user_id": user_id},
+            one_dict=True,
+        )
+        if request_info:
+            return request_info
+        else:
+            return None
+
+
+async def get_update_request_info(user_id: int, status: int, processed: bool = True):
+    async with pg_manager:
+        await pg_manager.update_data(
+            table_name="requests",
+            where_dict={"user_id": user_id},
+            update_dict={"status": status, "processed": True},
+        )
+        user_info = await get_request_info(user_id)
+        return user_info

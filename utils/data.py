@@ -32,3 +32,9 @@ menu_structure = {
         "Назад": "main",
     },
 }
+
+
+# CF для принятия запросов
+class RegistrationCallback(CallbackData, prefix="reg"):
+    action: str
+    user_id: int

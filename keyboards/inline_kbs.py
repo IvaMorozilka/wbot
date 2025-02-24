@@ -1,7 +1,12 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from utils.data import dashboard_names, menu_structure, MenuCallback
+from utils.data import (
+    dashboard_names,
+    menu_structure,
+    MenuCallback,
+    RegistrationCallback,
+)
 
 
 def main_loader_kb():
@@ -36,3 +41,23 @@ def generate_settings_kb(level, back=False):
         )
         builder.adjust(1, True)
         return builder.as_markup()
+
+
+def register_request_kb(user_id: int):
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Принять",
+        callback_data=RegistrationCallback(
+            action="a",
+            user_id=user_id,
+        ),
+    )
+    builder.button(
+        text="❌ Отклонить",
+        callback_data=RegistrationCallback(
+            action="r",
+            user_id=user_id,
+        ),
+    )
+    builder.adjust(1, 1)
+    return builder.as_markup()
