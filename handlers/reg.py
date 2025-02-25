@@ -127,7 +127,11 @@ async def accept_registration(call: CallbackQuery, callback_data: RegistrationCa
         return
     # Делаем вставку без status и processed
     await insert_user(
-        {k: v for k, v in request_info.items() if k not in {"status", "processed"}}
+        {
+            k: v
+            for k, v in request_info.items()
+            if k not in {"status", "processed", "by_whom"}
+        }
     )
     admin_info = await get_user_info(call.from_user.id)
     await process_request(
