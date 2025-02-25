@@ -12,6 +12,7 @@ from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import register_request_kb
 from aiogram.fsm.context import FSMContext
 from db_handler.db_funk import (
+    get_user_info,
     insert_user,
     get_admins,
     process_request,
@@ -120,13 +121,20 @@ async def accept_registration(call: CallbackQuery, callback_data: RegistrationCa
     request_info = await get_request_info(user_id=callback_data.user_id)
 
     if request_info.get("processed"):
-        await call.message.edit_text("Заявка уже обработана другим Администратором ℹ️")
+        await call.message.edit_text(
+            f"👨🏻‍💻 {request_info.get('by_whom')} уже принял данную заявку ✅"
+        )
         return
     # Делаем вставку без status и processed
     await insert_user(
         {k: v for k, v in request_info.items() if k not in {"status", "processed"}}
     )
-    await process_request(request_info.get("user_id"), status=1)
+    admin_info = await get_user_info(call.from_user.id)
+    await process_request(
+        request_info.get("user_id"),
+        status=1,
+        by_whom=f"{admin_info.get('full_name')}, {admin_info.get('username')}",
+    )
     await call.message.edit_text(
         f"Пользователь {request_info.get('full_name')}, {request_info.get('username')} принят ✅"
     )
@@ -143,13 +151,20 @@ async def reject_registration(call: CallbackQuery, callback_data: RegistrationCa
     request_info = await get_request_info(user_id=callback_data.user_id)
 
     if request_info.get("processed"):
-        await call.message.edit_text("Заявка уже обработана другим Администратором ℹ️")
+        await call.message.edit_text(
+            f"👨🏻‍💻 {request_info.get('by_whom')} уже отклонил данную заявку ⛔"
+        )
         return
 
     await call.message.edit_text(
         f"Пользователь {request_info.get('full_name')}, {request_info.get('username')} отклонен ⛔"
     )
-    await process_request(request_info.get("user_id"), status=2)
+    admin_info = await get_user_info(call.from_user.id)
+    await process_request(
+        request_info.get("user_id"),
+        status=2,
+        by_whom=f"{admin_info.get('full_name')}, {admin_info.get('username')}",
+    )
     await bot.send_message(
         chat_id=callback_data.user_id,
         text="Ваш запрос был отклонен 😔",

@@ -56,6 +56,7 @@ async def create_reg_requests_table():
         # 0 - pending, 1 - accepted, 2 - rejected
         {"name": "status", "type": Integer},
         {"name": "processed", "type": Boolean},
+        {"name": "by_whom", "type": Text},
     ]
     async with pg_manager:
         await pg_manager.create_table(table_name="requests", columns=columns)
@@ -150,12 +151,12 @@ async def get_request_info(user_id: int):
             return None
 
 
-async def process_request(user_id: int, status: int):
+async def process_request(user_id: int, status: int, by_whom: str):
     async with pg_manager:
         await pg_manager.update_data(
             table_name="requests",
             where_dict={"user_id": user_id},
-            update_dict={"processed": True, "status": status},
+            update_dict={"processed": True, "status": status, "by_whom": by_whom},
         )
         user_info = await get_request_info(user_id)
         return user_info
