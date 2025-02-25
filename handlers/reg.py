@@ -108,6 +108,7 @@ async def accept_registration(call: CallbackQuery, callback_data: RegistrationCa
     await insert_user(
         {k: v for k, v in user_info.items() if k not in {"status", "processed"}}
     )
+    await process_request(user_info.get("user_id"))
     await call.message.edit_text(
         f"Пользователь {user_info.get('full_name')}, {user_info.get('username')} принят ✅"
     )
@@ -130,6 +131,7 @@ async def reject_registration(call: CallbackQuery, callback_data: RegistrationCa
     await call.message.edit_text(
         f"Пользователь {user_info.get('full_name')}, {user_info.get('username')} отклонен ⛔"
     )
+    await process_request(user_info.get("user_id"))
     await bot.send_message(
         chat_id=callback_data.user_id,
         text="Ваш запрос был отклонен 😔",

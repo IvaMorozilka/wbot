@@ -150,12 +150,23 @@ async def get_request_info(user_id: int):
             return None
 
 
-async def get_update_request_info(user_id: int, status: int, processed: bool = True):
+async def get_update_request_info(user_id: int, status: int):
     async with pg_manager:
         await pg_manager.update_data(
             table_name="requests",
             where_dict={"user_id": user_id},
-            update_dict={"status": status, "processed": True},
+            update_dict={"status": status},
+        )
+        user_info = await get_request_info(user_id)
+        return user_info
+
+
+async def process_request(user_id: int):
+    async with pg_manager:
+        await pg_manager.update_data(
+            table_name="requests",
+            where_dict={"user_id": user_id},
+            update_dict={"processed": True},
         )
         user_info = await get_request_info(user_id)
         return user_info
