@@ -72,7 +72,9 @@ async def finish_form(call: CallbackQuery, state: FSMContext):
             "Регистрация успешна. Вы были указаны в списке Администраторов 👨🏻‍💻"
         )
     else:
-        await send_registration_request({**data, "admin": False, "status": 0})
+        await send_registration_request(
+            {**data, "admin": False, "processed": False, "status": 0}
+        )
         await call.message.edit_text(
             text="Ваш запрос был направлен Администраторам 📨 Ожидайте уведомления с решением.",
             reply_markup=None,
