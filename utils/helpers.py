@@ -4,7 +4,7 @@ import os
 import asyncio
 
 from create_bot import download_dir, bot
-from db_handler.db_funk import get_recievers
+from db_handler.db_funk import get_admins
 
 
 async def download_document(
@@ -35,7 +35,7 @@ async def send_document(
     delete_message_timeout: int = 1,
     show_progress: bool = True,
 ):
-    recievers = await get_recievers()
+    recievers = await get_admins()
     num_reciever_users = len(recievers)
     sending_text = f"🛫 Отправляю документ...\nПрогресс: {'⚪️' * num_reciever_users}"
     if not show_progress:
@@ -44,7 +44,7 @@ async def send_document(
     sending_msg = await message.answer(text=sending_text)
     ids_without_send = []
 
-    for user_id in [reciever["chat_id"] for reciever in recievers]:
+    for user_id in [reciever["user_id"] for reciever in recievers]:
         try:
             await bot.send_document(
                 chat_id=user_id,  # ID чата пользователя
