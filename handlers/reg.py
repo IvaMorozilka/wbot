@@ -16,7 +16,7 @@ from db_handler.db_funk import (
     get_admins,
     process_request,
     send_registration_request,
-    get_update_request_info,
+    get_request_info,
 )
 from handlers.states import States
 from create_bot import ADMINS, bot
@@ -117,18 +117,18 @@ async def finish_form(call: CallbackQuery, state: FSMContext):  # noqa: F811
 
 @reg_router.callback_query(RegistrationCallback.filter(F.action == "a"))
 async def accept_registration(call: CallbackQuery, callback_data: RegistrationCallback):
-    user_info = await get_update_request_info(user_id=callback_data.user_id, status=1)
+    request_info = await get_request_info(user_id=callback_data.user_id)
 
-    if user_info.get("processed"):
+    if request_info.get("processed"):
         await call.message.edit_text("Заявка уже обработана другим Администратором ℹ️")
         return
     # Делаем вставку без status и processed
     await insert_user(
-        {k: v for k, v in user_info.items() if k not in {"status", "processed"}}
+        {k: v for k, v in request_info.items() if k not in {"status", "processed"}}
     )
-    await process_request(user_info.get("user_id"))
+    await process_request(request_info.get("user_id"), status=1)
     await call.message.edit_text(
-        f"Пользователь {user_info.get('full_name')}, {user_info.get('username')} принят ✅"
+        f"Пользователь {request_info.get('full_name')}, {request_info.get('username')} принят ✅"
     )
 
     await bot.send_message(
@@ -140,16 +140,16 @@ async def accept_registration(call: CallbackQuery, callback_data: RegistrationCa
 
 @reg_router.callback_query(RegistrationCallback.filter(F.action == "r"))
 async def reject_registration(call: CallbackQuery, callback_data: RegistrationCallback):
-    user_info = await get_update_request_info(user_id=callback_data.user_id, status=2)
+    request_info = await get_request_info(user_id=callback_data.user_id)
 
-    if user_info.get("processed"):
+    if request_info.get("processed"):
         await call.message.edit_text("Заявка уже обработана другим Администратором ℹ️")
         return
 
     await call.message.edit_text(
-        f"Пользователь {user_info.get('full_name')}, {user_info.get('username')} отклонен ⛔"
+        f"Пользователь {request_info.get('full_name')}, {request_info.get('username')} отклонен ⛔"
     )
-    await process_request(user_info.get("user_id"))
+    await process_request(request_info.get("user_id"), status=2)
     await bot.send_message(
         chat_id=callback_data.user_id,
         text="Ваш запрос был отклонен 😔",
