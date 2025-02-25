@@ -7,17 +7,20 @@ from aiogram.types import (
 )
 from datetime import datetime
 
+
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import register_request_kb
 from aiogram.fsm.context import FSMContext
 from db_handler.db_funk import (
     insert_user,
     get_admins,
+    process_request,
     send_registration_request,
     get_update_request_info,
 )
 from handlers.states import States
 from create_bot import ADMINS, bot
+from utils.checkers import check_full_name, check_org_name
 from utils.data import RegistrationCallback
 
 
@@ -26,6 +29,13 @@ reg_router = Router()
 
 @reg_router.message(F.text, States.form_full_name)
 async def capture_fullname(message: Message, state: FSMContext):
+    if not check_full_name(message.text):
+        await message.reply(
+            text="ФИО неверно, повторите отправку.\n• Фамилия, имя и отчество должны начинаться с заглавной буквы.\n• Используйте только русские буквы.\n• Между словами должен быть один пробел."
+        )
+        await state.set_state(States.form_full_name)
+        return
+
     await state.update_data(
         {
             "full_name": message.text,
@@ -39,6 +49,12 @@ async def capture_fullname(message: Message, state: FSMContext):
 
 @reg_router.message(F.text, States.form_org_name)
 async def capture_orgname(message: Message, state: FSMContext):
+    if not check_org_name(message.text):
+        await message.reply(
+            text="Название организации неверно, повторите отправку. Пожалуйста, используйте только следующие символы:\n• Русские буквы в любом регистре\n• Цифры\n• Пробелы\n• Одинарные и двойные кавычки (' и \")\n• Тире (-)\n• Елочки (« и »)"
+        )
+        await state.set_state(States.form_org_name)
+        return
     await state.update_data(org_name=message.text)
     data = await state.get_data()
     await message.answer(
