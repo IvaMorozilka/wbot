@@ -1,7 +1,7 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 
-def main_kb(user_id):
+def main_kb():
     kb_list = [
         [KeyboardButton(text="⬇️Загрузить данные")],
         [KeyboardButton(text="🛟Поддержка")],

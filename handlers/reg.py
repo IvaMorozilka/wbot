@@ -68,7 +68,7 @@ async def finish_form(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     if call.from_user.id in ADMINS:
         await insert_user({**data, "admin": True})
-        await call.message.answer(
+        await call.message.edit_text(
             "Регистрация успешна. Вы были указаны в списке Администраторов 👨🏻‍💻"
         )
     else:
@@ -104,7 +104,7 @@ async def accept_registration(call: CallbackQuery, callback_data: RegistrationCa
     if user_info.get("processed"):
         await call.message.edit_text("Заявка уже обработана другим Администратором ℹ️")
         return
-
+    # Делаем вставку без status и processed
     await insert_user(
         {k: v for k, v in user_info.items() if k not in {"status", "processed"}}
     )
@@ -115,6 +115,7 @@ async def accept_registration(call: CallbackQuery, callback_data: RegistrationCa
     await bot.send_message(
         chat_id=callback_data.user_id,
         text="Ваш запрос был принят 🥳. Теперь вы можете загружать данные.",
+        reply_markup=main_kb(),
     )
 
 
@@ -132,4 +133,5 @@ async def reject_registration(call: CallbackQuery, callback_data: RegistrationCa
     await bot.send_message(
         chat_id=callback_data.user_id,
         text="Ваш запрос был отклонен 😔",
+        reply_markup=main_kb(),
     )

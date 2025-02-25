@@ -134,7 +134,7 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
     else:
         await message.reply(
             "🏁Ваш документ был успешно отправлен!",
-            reply_markup=main_kb(message.from_user.id),
+            reply_markup=main_kb(),
         )
         await state.clear()
 

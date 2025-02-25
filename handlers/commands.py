@@ -17,7 +17,7 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     if user_info:
         await message.answer(
             text="Воспользуйтесь меню 📋",
-            reply_markup=main_kb(message.from_user.id),
+            reply_markup=main_kb(),
         )
     else:
         user_info = await get_request_info(message.from_user.id)
@@ -42,6 +42,4 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
 @commands_router.message(Command("restart"))
 async def restart_bot(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer(
-        "🔄Состояние сброшено!", reply_markup=main_kb(message.from_user.id)
-    )
+    await message.answer("🔄Состояние сброшено!", reply_markup=main_kb())
