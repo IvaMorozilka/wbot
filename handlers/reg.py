@@ -5,7 +5,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     CallbackQuery,
 )
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 
 from keyboards.all_kb import main_kb
@@ -100,7 +100,7 @@ async def finish_form(call: CallbackQuery, state: FSMContext):
         for user_id in [admin["user_id"] for admin in admins_info]:
             await bot.send_message(
                 chat_id=user_id,
-                text=f"<b>Новый запрос на регистрацию</b> 🙋‍♂️\n\nДата и время: {datetime.now().strftime('%d-%m-%y %H:%M')}\nИмя: {data.get('full_name')}, {data.get('username')}\nОрганизация: {data.get('org_name')}",
+                text=f"<b>Новый запрос на регистрацию</b> 🙋‍♂️\n\nДата и время: {datetime.now(timezone(timedelta(hours=3))).strftime('%d-%m-%y %H:%M')}\nИмя: {data.get('full_name')}, {data.get('username')}\nОрганизация: {data.get('org_name')}",
                 reply_markup=register_request_kb(data.get("user_id")),
             )
     await state.clear()
