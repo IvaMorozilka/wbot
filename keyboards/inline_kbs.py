@@ -1,9 +1,9 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from utils.data import (
-    dashboard_names,
-    menu_structure,
+from utils.constants import (
+    DASHBOARD_NAMES,
+    MENU_STRUCTURE,
     MenuCallback,
     RegistrationCallback,
 )
@@ -11,8 +11,8 @@ from utils.data import (
 
 def main_loader_kb():
     builder = InlineKeyboardBuilder()
-    for name in dashboard_names:
-        builder.button(text=name, callback_data=name)
+    for text, callback in DASHBOARD_NAMES:
+        builder.button(text=text, callback_data=callback)
     builder.adjust(3, 3, 1, 1, 1, 1)
     return builder.as_markup()
 
@@ -29,7 +29,7 @@ def goback_actions_kb():
 def generate_settings_kb(level, back=False):
     builder = InlineKeyboardBuilder()
     if not back:
-        for option, callback in menu_structure[level].items():
+        for option, callback in MENU_STRUCTURE[level].items():
             builder.button(
                 text=option, callback_data=MenuCallback(level=level, option=callback)
             )

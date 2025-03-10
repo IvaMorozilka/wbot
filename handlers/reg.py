@@ -22,7 +22,7 @@ from db_handler.db_funk import (
 from handlers.states import States
 from create_bot import ADMINS, bot
 from utils.checkers import check_full_name, check_org_name
-from utils.data import RegistrationCallback
+from utils.constants import RegistrationCallback
 
 
 reg_router = Router()

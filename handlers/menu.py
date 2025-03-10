@@ -5,7 +5,7 @@ from handlers.states import States
 
 from keyboards.inline_kbs import main_loader_kb, generate_settings_kb
 from keyboards.all_kb import main_kb
-from utils.data import MenuCallback
+from utils.constants import MenuCallback
 from db_handler.db_funk import get_user_info, get_admins
 
 
