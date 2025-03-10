@@ -1,3 +1,4 @@
+import io
 from aiogram import Router, F
 from aiogram.types import (
     Message,
@@ -5,6 +6,7 @@ from aiogram.types import (
     ErrorEvent,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
+    FSInputFile,
 )
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import ExceptionTypeFilter
@@ -13,11 +15,12 @@ from aiogram.fsm.context import FSMContext
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import goback_actions_kb, main_loader_kb
 from create_bot import bot
-from utils.excel_helpers.checker import check_document_by_option
-from utils.helpers import download_document, send_document
-from utils.data import dashboard_names
+from utils.excel_helpers.checker import check_document_by_category
+from utils.helpers import download_document_to_bytes, send_document
+from utils.constants import DASHBOARD_NAMES, DASHBOARD_CALLBACKS, INSTRUCTIONS_IMAGES
 from handlers.states import States
 from db_handler.db_funk import get_user_info
+from utils.constants import InstructionsCallback
 
 
 document_router = Router()
@@ -40,13 +43,16 @@ async def process_option_choice(message: Message, state: FSMContext):  # noqa: F
     await state.update_data(States.waiting_for_option)
 
 
-@document_router.callback_query(F.data.in_(dashboard_names), States.waiting_for_option)
+@document_router.callback_query(
+    F.data.in_(DASHBOARD_CALLBACKS),
+    States.waiting_for_option,
+)
 async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa: F811
     option_name = call.data
     await state.update_data(option=option_name)
 
-    if option_name != "Гумманитарная помощь СВО":
-        await call.answer("Доступен только Гумманитарная помощь СВО")
+    if option_name != "ГуманитарнаяПомощьСВО":
+        await call.answer("Доступен только Гуманитарная помощь СВО")
         return
 
     await call.answer()
@@ -58,7 +64,7 @@ async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa
 
 
 @document_router.callback_query(
-    F.data.in_(dashboard_names), States.waiting_for_document
+    F.data.in_(DASHBOARD_CALLBACKS), States.waiting_for_document
 )
 async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa: F811
     data = await state.get_data()
@@ -71,6 +77,20 @@ async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa
 async def process_document(message: Message, state: FSMContext):
     await message.reply("Это не похоже на документ. Повторите отправку.")
     await state.set_state(States.waiting_for_document)
+
+
+@document_router.callback_query(F.data == "show_instruction")
+async def send_instruction(call: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    option = data.get("option", "")
+    if option:
+        instr = FSInputFile(INSTRUCTIONS_IMAGES[option])
+        await call.message.answer_photo(
+            photo=instr, caption="Если возникли вопросы обратитесь к @azmsus"
+        )
+        await call.answer()
+    else:
+        await call.answer("Для показа инструкции нужно выбрать дашборд")
 
 
 @document_router.message(F.document, States.waiting_for_document)
@@ -86,30 +106,41 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
 
     # Getting file info
     file_id = message.document.file_id
-    file = await bot.get_file(file_id)
-    file_path = file.file_path
-    file_name = message.document.file_name
 
-    # Downloading to local path
-    local_file_path = await download_document(bot, file_path, file_name, dshb_name)
+    # Downloading to bytes
+    file_io = io.BytesIO()
+    await message.bot.download(message.document, destination=file_io)
+    file_io.seek(0)
+    if not file_io:
+        await message.answer("Не смог получить ваш файл, попробуйте отправить еще раз")
+        return
 
     # Cheking + processing stage
     # 1 - Checking for correct headers
-    result, error_msg = check_document_by_option(local_file_path, category=dshb_name)
+    result, errors = check_document_by_category(file_bytes=file_io, category=dshb_name)
     if not result:
         await message.answer(
-            f"❌ Возникла проблема при проверке документа.\n\n{error_msg}\nℹ️ Пожалуйста, отправьте новый документ следующим сообщением",
+            f"{errors}\nℹ️ Пожалуйста, отправьте новый документ следующим сообщением",
             reply_markup=(
                 InlineKeyboardMarkup(
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
+                                text="Посмотреть инструкцию",
+                                callback_data="show_instruction",
+                            ),
+                            InlineKeyboardButton(
                                 text="Вернуться к выбору", callback_data="back"
-                            )
+                            ),
                         ]
                     ]
                 )
             ),
+        )
+
+        await message.answer_photo(
+            photo=FSInputFile(path="assets/instr_humaid.jpg"),
+            caption="Ознакомьтесь с инструкциейю",
         )
         return
 
