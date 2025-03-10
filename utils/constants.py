@@ -15,14 +15,6 @@ DASHBOARD_NAMES = [
     ("Импортозамещение", "Импортозамещение"),
 ]
 DASHBOARD_CALLBACKS = [callback for _, callback in DASHBOARD_NAMES]
-
-
-# Менюшка
-class MenuCallback(CallbackData, prefix="menu"):
-    level: str
-    option: str
-
-
 MENU_STRUCTURE = {
     "main": {
         "Просмотр": "show",
@@ -34,18 +26,16 @@ MENU_STRUCTURE = {
         "Назад": "main",
     },
 }
+INSTRUCTIONS_IMAGES = {"ГуманитарнаяПомощьСВО": "assets/ha.jpg"}
+
+
+# Менюшка
+class MenuCallback(CallbackData, prefix="menu"):
+    level: str
+    option: str
 
 
 # CF для принятия запросов
 class RegistrationCallback(CallbackData, prefix="reg"):
     action: str
     user_id: int
-
-
-# CF для интрукций
-class InstructionsCallback(CallbackData, prefix="instr"):
-    option: str
-    image: str
-
-
-INSTRUCTIONS_IMAGES = {"ГуманитарнаяПомощьСВО": "assets/ha.jpg"}

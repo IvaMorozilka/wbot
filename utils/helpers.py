@@ -1,30 +1,12 @@
 from aiogram import Bot
-from aiogram.types import Message
+from aiogram.types import Message, BufferedInputFile
 import os
 import asyncio
+import io
+import pandas as pd
 
 from create_bot import download_dir, bot
 from db_handler.db_funk import get_admins
-
-
-async def download_document(
-    bot: Bot, file_path: str, file_name: str, option: str
-) -> str:
-    try:
-        downloaded_file = await bot.download_file(file_path)
-        # Создаем папку для загрузок
-        os.makedirs(download_dir, exist_ok=True)
-        local_file_path = os.path.join(download_dir, option)
-        # Создаем папку с именем дашборда
-        os.makedirs(local_file_path, exist_ok=True)
-        local_file_path = os.path.join(local_file_path, f"{file_name}")
-        with open(local_file_path, "wb") as new_file:
-            new_file.write(downloaded_file.read())
-        return local_file_path
-    except Exception as e:
-        print(f"СОХРАНЕНИЕ ФАЙЛА - ОШИБКА: {e}")
-
-    # caption_message = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {message.from_user.full_name}, @{message.from_user.username or 'не указан'}"
 
 
 async def send_document(

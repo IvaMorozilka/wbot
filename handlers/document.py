@@ -14,13 +14,11 @@ from aiogram.fsm.context import FSMContext
 
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import goback_actions_kb, main_loader_kb
-from create_bot import bot
 from utils.excel_helpers.checker import check_document_by_category
-from utils.helpers import download_document_to_bytes, send_document
-from utils.constants import DASHBOARD_NAMES, DASHBOARD_CALLBACKS, INSTRUCTIONS_IMAGES
+from utils.helpers import send_document
+from utils.constants import DASHBOARD_CALLBACKS, INSTRUCTIONS_IMAGES
 from handlers.states import States
 from db_handler.db_funk import get_user_info
-from utils.constants import InstructionsCallback
 
 
 document_router = Router()
