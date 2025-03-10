@@ -1,169 +1,118 @@
-from utils.excel_helpers.excel_parser_utils import *
-from openpyxl import load_workbook
+import openpyxl
 from openpyxl.utils import get_column_letter
 from icecream import ic
 import pandas as pd
-from typing import List
-import os
+import io
+from create_bot import logger
 
-from utils.excel_helpers.data import correct_header_data
+from utils.excel_helpers.constants import (
+    COLUMNS_DATA_TYPES,
+    CORRECT_HEADER_DATA,
+    COLUMNS_TO_CHECK_NULLS_IN,
+)
 
 ic.configureOutput(prefix="LOGS| ")
 ic.disable()
 
 
-def transform_pipeline(input, output):
-    list_of_warnings = []
-    # Проверка наличия активного листа
-
-    workbook = load_workbook(input, data_only=True, read_only=False)
-    sheet = workbook.active
-
-    if sheet is None:
-        return False, "Файл не содержит активного листа."
-
-    if sheet.max_row == 0 or sheet.max_column == 0:
-        return False, "Активный лист пустой."
-
-    # Разъеденим все объедененные ячейки, они мешают.
-    sheet = unmerge_cells(sheet)
-
-    if sheet["A1"].value is None or sheet["A1"].value == "":
-        list_of_warnings.append(
-            "Данные не начинаются с ячейки A1. Было применено удаление строк. Рекомендуется проверить результат!"
-        )
-
-        first_non_empty = None
-        for idx, row in enumerate(sheet.iter_rows(min_col=1, max_col=1)):
-            if row[0].value is not None:
-                first_non_empty = idx + 1
-                break
-        if first_non_empty is not None and first_non_empty > 1:
-            sheet.delete_rows(1, first_non_empty - 1)
-
-    # Удаление столбца A
-    process_and_delete_column(sheet, "A")
-
-    # Удаление всех фильтров
-    sheet.auto_filter.ref = None
-
-    # Раскрываем скрытые строки и столбцы
-    sheet = remove_hidden_cells(sheet)
-
-    # Увеличим ширину столбцов, чтобы влезали цифры и было красиво
-    set_column_width(sheet, ["B", "C", "D", "E", "F", "G", "H", "I"], 18)
-    set_column_width(sheet, ["A"], 63)
-
-    code, msg = process_header(sheet)
-    if not code:
-        return code, msg
-
-    otvetst_col_letter = get_column_letter(sheet.max_column - 1)
-
-    # Этап добавления рaсчетов
-    # data[0] расчеты в руб, data[1] - в %
-    code, msg, data, logs = calculate_additional_data(sheet)
-    if not code:
-        return False, msg
-
-    for log in logs:
-        if any(value == "" for value in log.values()):
-            return (
-                False,
-                'При расчетах произошла ошибка. Не были найдены ячейки "Развитие" или "Сопровождение" в колонке "Наименование показателя эффективности и результативности деятельности учреждения". Возможно опечатки.',
-            )
-
-    if any(len(value.split("+")) < 6 for value in logs[0].values()):
-        list_of_warnings.append(
-            "Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все суммы (руб) содержат 6 значений."
-        )
-
-    if any(len(value.split("/")[1].split("+")) < 6 for value in logs[1].values()):
-        list_of_warnings.append(
-            "Внимание. Настоятельно рекомендуется проверить расчеты с помощью логов. Не все выражения (проценты) содержат 6 значений в знаменателе."
-        )
-
-    last_row = find_last_row_with_word(sheet, otvetst_col_letter, "Бекетова") + 1
-    col_rub = get_column_letter(find_column_index_by_header(sheet, ["Итого", "руб"]))
-    col_perc = get_column_letter(find_column_index_by_header(sheet, ["Итого", "%"]))
-
-    sheet.insert_rows(last_row, 6)
-    for key, value_rub, value_perc in zip(
-        data[0].keys(), data[0].values(), data[1].values()
-    ):
-        sheet[f"A{last_row}"].value = key
-        sheet[f"{col_rub}{last_row}"] = value_rub
-        sheet[f"{col_rub}{last_row}"].number_format = "0.00"
-        sheet[f"{otvetst_col_letter}{last_row}"].value = "Бекетова"
-        sheet[f"{col_perc}{last_row}"] = value_perc
-        sheet[f"{col_perc}{last_row}"].number_format = "0.00%"
-
-        last_row += 1
-
-    # Переносим Гречушкина выше
-    move_and_replace_rows(sheet, otvetst_col_letter, "Гречушкин", last_row)
-
-    # Заполняем id
-    # Пока не будем удалять строку, чтобы было легче анализировать логи по вычислениям
-    # sheet.delete_rows(2)
-    delete_empty_rows(sheet)
-    fill_column_with_ids(sheet, 2, 2, get_column_letter(sheet.max_column))
-    sheet = replace_bad_values(sheet)
-    apply_borders_to_all_cells(sheet)
-    apply_font_to_all_cells(sheet, "Times New Roman", 11)
-
-    try:
-        workbook.save(output)
-        return True, "Файл успешно обработан!", list_of_warnings, logs
-
-    except Exception as e:
-        return True, f"Произошла ошибка при сохранении файла. {e}"
+class DocumentCheckError(Exception):
+    pass
 
 
-def check_correct_header(file_path: str, correct_headers: List[str]):
-    try:
-        xls = pd.ExcelFile(file_path)
-        df = pd.read_excel(xls, xls.sheet_names[0])
-        xls_headers = [header.strip().lower() for header in df.columns]
-        missing = {}
+def check_correct_header(
+    df: pd.DataFrame, category: str, correct_headers: dict = CORRECT_HEADER_DATA
+):
+    correct_headers_list = correct_headers.get(category, [])
+    if not correct_headers_list:
+        return False, "Остутсвуют правильные заголовки"
+    xls_headers = [header.strip().lower() for header in df.columns]
+    missing = {}
 
-        for i, correct_header in enumerate(correct_headers):
-            if correct_header.lower() not in xls_headers:
-                missing[get_column_letter(i + 1)] = correct_header
+    for i, correct_header in enumerate(correct_headers_list):
+        if correct_header.lower() not in xls_headers:
+            missing[get_column_letter(i + 1)] = correct_header
 
-        if missing:
-            missing = [
-                f"<b>{column}</b>: <code>{name}</code>\n"
-                for column, name in missing.items()
-            ]
-            xls.close()
-            os.remove(file_path)
-            return (
-                False,
-                f"Ошибка возникает, если программа не обнаруживает точного названия столбца в документе. Возможно, требуемый столбец отсутствует или его название содержит опечатку.\n\n<b>Остуствуют столбцы:</b>\n{''.join(missing)}",
-            )
-
-        return True, ""
-    except Exception as e:
-        if os.path.isfile(file_path):
-            xls.close()
-            os.remove(file_path)
+    if missing:
+        missing = [
+            f"<b>{column}</b>: <code>{name}</code>\n"
+            for column, name in missing.items()
+        ]
         return (
             False,
-            f"Произошла ошибка на стороне сервера.\n<b>nОписание ошибки:<b> <code>{e}</code>",
+            f"<b>Остуствуют столбцы</b> ⬇️\n{''.join(missing)}",
         )
 
+    return True, ""
 
-def check_document_by_option(
-    file_path: str,
+
+def check_merged_cells(file_bytes: io.BytesIO):
+    wb = openpyxl.load_workbook(file_bytes)
+    if wb.active.merged_cells:
+        return False, "<b>❗️Найдены объединенные ячейки</b>"
+    return True, ""
+
+
+def check_missing_cells(
+    df: pd.DataFrame, category: str, check_columns: dict = COLUMNS_TO_CHECK_NULLS_IN
+) -> None:
+    columns_to_check = check_columns.get(category, [])
+    if not columns_to_check:
+        columns_to_check = df.columns
+    bad_columns = []
+
+    for column in columns_to_check:
+        if column in df.columns:
+            series = df[column]
+            if (
+                series.isna().any() or (series == "-").any()
+            ) and column in columns_to_check:
+                bad_columns.append("<code>" + column + "</code>")
+
+    if bad_columns:
+        return (
+            False,
+            f"<b>❗️Наличие пропущенных значений</b> ⬇️\n{'\n'.join(bad_columns)}",
+        )
+    return True, ""
+
+
+def check_data_types(
+    df: pd.DataFrame, category: str, column_types: dict = COLUMNS_DATA_TYPES
+) -> None:
+    data_types = column_types.get(category, [])
+    if not data_types:
+        return False, "Не указаны типы данных"
+    bad_columns = []
+
+    for column, series in df.items():
+        if series.dtype != data_types[column]:
+            bad_columns.append("<code>" + column + "</code>")
+    if bad_columns:
+        return False, f"<b>❗️Неверный тип данных</b> ⬇️\n{'\n'.join(bad_columns)}"
+    return True, ""
+
+
+def check_document_by_category(
+    file_bytes: io.BytesIO,
     category: str,
-    correct_headers_data: List[str] = correct_header_data,
 ):
-    return check_correct_header(file_path, correct_headers_data[category])
+    df = pd.read_excel(file_bytes)
+    checks = [
+        (check_correct_header, [df, category]),
+        (check_merged_cells, [file_bytes]),
+        (check_missing_cells, [df, category]),
+        (check_data_types, [df, category]),
+    ]
+    errors = []
+    for idx, (check_fn, args) in enumerate(checks):
+        is_valid, error_msg = check_fn(*args)
+        if not is_valid:
+            if idx == 0:
+                errors.append(error_msg)
+                break
+            errors.append(error_msg)
 
+    if errors:
+        return False, f"<b>ℹ️Проверка документа не пройдена</b>\n{'\n'.join(errors)}"
 
-def process_document_by_option(input: str, output: str, category: str):
-    if category == "Гумманитарная помощь СВО":
-        return "ОБРАБОТАЛ ДОКУМЕНТ ОЭП"
-    else:
-        return "Обработал другие документы"
+    return True, ""
