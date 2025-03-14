@@ -5,7 +5,6 @@ from handlers.states import States
 
 from keyboards.inline_kbs import main_loader_kb, generate_settings_kb
 from keyboards.all_kb import main_kb
-from utils.constants import MenuCallback
 from db_handler.db_funk import get_user_info, get_admins
 
 
@@ -46,44 +45,3 @@ async def show_settings(message: Message):
         )
     else:
         await message.answer("Только для администраторов 👨🏻‍💼")
-
-
-@menu_router.callback_query(MenuCallback.filter(F.option == "main"))
-async def back_to_main_menu(call: CallbackQuery, callback_data: MenuCallback):
-    await call.message.edit_text(
-        text="Главное меню", reply_markup=generate_settings_kb("main")
-    )
-
-
-@menu_router.callback_query(MenuCallback.filter(F.level == "main"))
-async def main_menu(call: CallbackQuery, callback_data: MenuCallback):
-    if callback_data.option == "show":
-        await call.message.edit_text(
-            text="Просмотр", reply_markup=generate_settings_kb(callback_data.option)
-        )
-
-
-@menu_router.callback_query(
-    MenuCallback.filter(F.level == "show" and F.option == "back")
-)
-async def go_back(call: CallbackQuery):
-    await call.message.edit_text(
-        text="Просмотр", reply_markup=generate_settings_kb("show")
-    )
-
-
-@menu_router.callback_query(MenuCallback.filter(F.level == "show"))
-async def show_menu(call: CallbackQuery, callback_data: MenuCallback, bot: Bot):
-    if callback_data.option == "admins":
-        await call.message.edit_text(
-            text="Показал администраторов",
-            reply_markup=generate_settings_kb("show", True),
-        )
-    elif callback_data.option == "recievers":
-        await call.message.edit_text(
-            text="Показал получателей", reply_markup=generate_settings_kb("show", True)
-        )
-    else:
-        await call.message.edit_text(
-            text="Показал кого то еще", reply_markup=generate_settings_kb("show", True)
-        )

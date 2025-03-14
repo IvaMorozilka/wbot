@@ -3,9 +3,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from utils.constants import (
     DASHBOARD_NAMES,
-    MENU_STRUCTURE,
-    MenuCallback,
     RegistrationCallback,
+    SETTINGS_STRUCTURE,
+    SettingsCallback,
 )
 
 
@@ -26,23 +26,6 @@ def goback_actions_kb():
     )
 
 
-def generate_settings_kb(level, back=False):
-    builder = InlineKeyboardBuilder()
-    if not back:
-        for option, callback in MENU_STRUCTURE[level].items():
-            builder.button(
-                text=option, callback_data=MenuCallback(level=level, option=callback)
-            )
-        builder.adjust(1, True)
-        return builder.as_markup()
-    else:
-        builder.button(
-            text="Назад", callback_data=MenuCallback(level=level, option="back")
-        )
-        builder.adjust(1, True)
-        return builder.as_markup()
-
-
 def register_request_kb(user_id: int):
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -61,3 +44,21 @@ def register_request_kb(user_id: int):
     )
     builder.adjust(1, 1)
     return builder.as_markup()
+
+
+def generate_settings_kb(level, back=False):
+    builder = InlineKeyboardBuilder()
+    if not back:
+        for option, callback in SETTINGS_STRUCTURE[level].items():
+            builder.button(
+                text=option,
+                callback_data=SettingsCallback(level=level, option=callback),
+            )
+        builder.adjust(1, True)
+        return builder.as_markup()
+    else:
+        builder.button(
+            text="Назад", callback_data=SettingsCallback(level=level, option="back")
+        )
+        builder.adjust(1, True)
+        return builder.as_markup()

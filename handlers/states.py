@@ -8,3 +8,7 @@ class States(StatesGroup):
     form_full_name = State()
     form_org_name = State()
     check_state = State()
+
+
+class SettingsStates(StatesGroup):
+    waiting_for_text = State()

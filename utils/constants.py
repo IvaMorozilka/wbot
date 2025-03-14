@@ -1,3 +1,4 @@
+from ast import main
 from aiogram.filters.callback_data import CallbackData
 
 # Названия кнопок по дашбордам
@@ -15,9 +16,13 @@ DASHBOARD_NAMES = [
     ("Импортозамещение", "Импортозамещение"),
 ]
 DASHBOARD_CALLBACKS = [callback for _, callback in DASHBOARD_NAMES]
-MENU_STRUCTURE = {
+
+INSTRUCTIONS_IMAGES = {"ГуманитарнаяПомощьСВО": "assets/ha.jpg"}
+
+SETTINGS_STRUCTURE = {
     "main": {
         "Просмотр": "show",
+        "Отправить сообщение": "send",
     },
     "show": {
         "Админы": "admins",
@@ -25,12 +30,16 @@ MENU_STRUCTURE = {
         "Белый список": "whitelist",
         "Назад": "main",
     },
+    "send": {
+        "Отправить всем": "to_all",
+        "Отправить кому-то": "to_smb",
+        "Назад": "main",
+    },
 }
-INSTRUCTIONS_IMAGES = {"ГуманитарнаяПомощьСВО": "assets/ha.jpg"}
 
 
 # Менюшка
-class MenuCallback(CallbackData, prefix="menu"):
+class SettingsCallback(CallbackData, prefix="menu"):
     level: str
     option: str
 
