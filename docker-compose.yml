@@ -14,9 +14,6 @@ services:
   bot:
     build:
       context: .
-      args:
-        - HTTP_PROXY=${PROXY_URL}
-        - HTTPS_PROXY=${PROXY_URL}
     restart: always
     volumes:
       - .:/app
