@@ -17,7 +17,7 @@ DASHBOARD_NAMES = [
 ]
 DASHBOARD_CALLBACKS = [callback for _, callback in DASHBOARD_NAMES]
 
-INSTRUCTIONS_IMAGES = {"ГуманитарнаяПомощьСВО": "assets/ha.jpg"}
+INSTRUCTIONS_IMAGES = {"ГуманитарнаяПомощьСВО": "assets/ha.png"}
 
 SETTINGS_STRUCTURE = {
     "main": {
