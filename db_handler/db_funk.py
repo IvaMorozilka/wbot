@@ -115,6 +115,12 @@ async def get_admins():
         return admins_info
 
 
+async def get_all_users():
+    async with pg_manager:
+        users_info = await pg_manager.select_data(table_name="users")
+        return users_info
+
+
 async def get_recievers():
     async with pg_manager:
         recievers_info = await pg_manager.select_data(
