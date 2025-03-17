@@ -2,7 +2,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from utils.constants import (
-    DASHBOARD_NAMES,
+    DASHBOARDS,
     RegistrationCallback,
     SETTINGS_STRUCTURE,
     SettingsCallback,
@@ -11,7 +11,7 @@ from utils.constants import (
 
 def main_loader_kb():
     builder = InlineKeyboardBuilder()
-    for text, callback in DASHBOARD_NAMES:
+    for text, callback in DASHBOARDS:
         builder.button(text=text, callback_data=callback)
     builder.adjust(3, 3, 1, 1, 1, 1)
     return builder.as_markup()
@@ -20,8 +20,12 @@ def main_loader_kb():
 def goback_actions_kb():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Отменить выбор", callback_data="back")],
-            # [InlineKeyboardButton(text="Обратно в меню", callback_data="goto_menu")],
+            [InlineKeyboardButton(text="❌ Отменить выбор", callback_data="back")],
+            [
+                InlineKeyboardButton(
+                    text="📖 Показать инструкцию", callback_data="show_instruction"
+                )
+            ],
         ]
     )
 
@@ -62,3 +66,24 @@ def generate_settings_kb(level, back=False):
         )
         builder.adjust(1, True)
         return builder.as_markup()
+
+
+def settings_confirm_action_kb(level):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Потвердить",
+                    callback_data=SettingsCallback(
+                        level=level, option="confirm"
+                    ).pack(),
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Отменить",
+                    callback_data=SettingsCallback(level=level, option="cancel").pack(),
+                )
+            ],
+        ]
+    )

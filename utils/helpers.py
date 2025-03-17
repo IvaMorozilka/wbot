@@ -4,9 +4,11 @@ import os
 import asyncio
 import io
 import pandas as pd
+from aiogram.fsm.context import FSMContext
+from aiogram.exceptions import TelegramBadRequest
 
 from create_bot import download_dir, bot
-from db_handler.db_funk import get_admins
+from db_handler.db_funk import get_admins, get_all_users
 
 
 async def send_document(
@@ -57,3 +59,38 @@ async def send_document(
     await bot.delete_message(chat_id=message.chat.id, message_id=sending_msg.message_id)
 
     return num_reciever_users, ids_without_send
+
+
+async def send_message_to_all_users(
+    bot: Bot, message_id: int, from_chat_id: int
+) -> tuple[int, int]:
+    # Получаем всех пользователей из базы данных
+    users = await get_all_users()
+    users = [user.get("user_id") for user in users]
+    # Фильтр, чтобы не дублировалось сообщение в чат
+    users = list(filter(lambda user: user != from_chat_id, users))
+
+    successful = 0
+    failed = 0
+
+    for user_id in users:
+        try:
+            # Копируем сообщение пользователю
+            await bot.copy_message(
+                chat_id=user_id,
+                from_chat_id=from_chat_id,
+                message_id=message_id,
+                disable_notification=False,
+            )
+            successful += 1
+            # Небольшая задержка для избежания блокировки API
+            await asyncio.sleep(0.05)
+        except TelegramBadRequest:
+            # Обработка ошибки если пользователь заблокировал бота
+            failed += 1
+        except Exception as e:
+            # Логирование других ошибок
+            print(f"Error sending message to {user_id}: {e}")
+            failed += 1
+
+    return successful, failed
