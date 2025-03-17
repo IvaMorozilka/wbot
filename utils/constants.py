@@ -3,7 +3,7 @@ from aiogram.filters.callback_data import CallbackData
 
 # Названия кнопок по дашбордам
 # (название кнопки, название колбэка)
-DASHBOARD_NAMES = [
+DASHBOARDS = [
     ("АИП", "АИП"),
     ("ОЭП", "ОЭП"),
     ("КОК", "КОК"),
@@ -15,7 +15,8 @@ DASHBOARD_NAMES = [
     ("Новый ФНС", "НовыйФНС"),
     ("Импортозамещение", "Импортозамещение"),
 ]
-DASHBOARD_CALLBACKS = [callback for _, callback in DASHBOARD_NAMES]
+DASHBOARD_NAMES = {callback: name for name, callback in DASHBOARDS}
+DASHBOARD_CALLBACKS = [callback for _, callback in DASHBOARDS]
 
 INSTRUCTIONS_IMAGES = {"ГуманитарнаяПомощьСВО": "assets/ha.png"}
 

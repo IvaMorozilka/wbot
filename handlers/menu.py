@@ -40,7 +40,7 @@ async def show_settings(message: Message):
     admins = await get_admins()
     if any(message.from_user.id in admin.values() for admin in admins):
         await message.answer(
-            text="Настройки:",
+            text="Главное меню",
             reply_markup=generate_settings_kb("main"),
         )
     else:

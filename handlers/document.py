@@ -16,7 +16,7 @@ from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import goback_actions_kb, main_loader_kb
 from utils.excel_helpers.checker import check_document_by_category
 from utils.helpers import send_document
-from utils.constants import DASHBOARD_CALLBACKS, INSTRUCTIONS_IMAGES
+from utils.constants import DASHBOARD_CALLBACKS, INSTRUCTIONS_IMAGES, DASHBOARD_NAMES
 from handlers.states import States
 from db_handler.db_funk import get_user_info
 
@@ -55,7 +55,7 @@ async def process_option_choice(call: CallbackQuery, state: FSMContext):  # noqa
 
     await call.answer()
     await call.message.edit_text(
-        text=f"Выбран дашборд <b>{option_name}</b>.\nПрикрепите 🧷 документ 📄 в следующем сообщении ⬇️",
+        text=f"Выбран дашборд <b>{DASHBOARD_NAMES[option_name]}</b>.\n\nℹ Перед загрузкой рекомендую ознакомиться с инструкцией\n\nПрикрепите документ 🧷📄 в следующем сообщении ⬇️",
         reply_markup=goback_actions_kb(),
     )
     await state.set_state(States.waiting_for_document)
@@ -98,7 +98,7 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
 
     if not message.document.file_name.endswith((".xlsx", ".xlsm", ".xltx", ".xltm")):
         await message.reply(
-            "Пожалуйста, отправьте файл в формате таблиц Excel.\nℹ️Поддерживаемые расширения файлов xlsx/xlsm/xltx/xltm"
+            "Пожалуйста, отправьте файл в формате таблиц Excel.\n\nℹ️ Поддерживаемые расширения файлов xlsx/xlsm/xltx/xltm"
         )
         return
 
@@ -124,21 +124,16 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
                     inline_keyboard=[
                         [
                             InlineKeyboardButton(
-                                text="Посмотреть инструкцию",
+                                text="📖 Посмотреть инструкцию",
                                 callback_data="show_instruction",
                             ),
                             InlineKeyboardButton(
-                                text="Вернуться к выбору", callback_data="back"
+                                text="↩️ Вернуться к выбору", callback_data="back"
                             ),
                         ]
                     ]
                 )
             ),
-        )
-
-        await message.answer_photo(
-            photo=FSInputFile(path="assets/instr_humaid.jpg"),
-            caption="Ознакомьтесь с инструкциейю",
         )
         return
 
