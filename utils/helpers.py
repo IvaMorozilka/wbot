@@ -129,3 +129,52 @@ def print_info_table(
         table.add_row(list(filtered.values()))
 
     return f"<pre>{table.get_string()}</pre>"
+
+
+def parse_user_input_ids(ids: str) -> tuple[bool, list[int]]:
+    """
+    Parse and validate a comma-separated string of Telegram user IDs.
+
+    Args:
+        ids (str): A comma-separated string of Telegram user IDs
+
+    Returns:
+        tuple[bool, list[int]]: A tuple containing:
+            - bool: True if the input is valid, False otherwise
+            - list[int]: The list of parsed IDs if valid, empty list if invalid
+    """
+    # Check if input is a string
+    if not isinstance(ids, str):
+        return False, []
+
+    # Remove any whitespace and check if the string is empty
+    ids = ids.strip()
+    if not ids:
+        return False, []
+
+    # Split by comma
+    id_strings = ids.split(",")
+
+    # Check if there's an empty element (happens with trailing comma)
+    if any(not id_str.strip() for id_str in id_strings):
+        return False, []
+
+    try:
+        # Try to convert each ID to an integer
+        parsed_ids = [int(id_str.strip()) for id_str in id_strings]
+
+        # Validate each ID (Telegram IDs are positive integers)
+        for user_id in parsed_ids:
+            # Check if IDs are valid Telegram user IDs (positive integers)
+            if user_id <= 0:
+                return False, []
+
+            # Typically Telegram IDs are 9-10 digits long, but this is a soft check
+            # as Telegram ID format might change in the future
+            if len(str(user_id)) <= 6 or len(str(user_id)) >= 15:
+                return False, []
+
+        return True, parsed_ids
+    except ValueError:
+        # If any ID can't be converted to an integer
+        return False, []
