@@ -1,16 +1,10 @@
 from aiogram import Bot
-from aiogram.types import Message, BufferedInputFile
+from aiogram.types import Message
 from aiogram.exceptions import TelegramBadRequest
-import os
 import asyncio
-import io
-import pandas as pd
-from aiogram.fsm.context import FSMContext
-from aiogram.exceptions import TelegramBadRequest
-import aiohttp
 from prettytable import PrettyTable, TableStyle
 
-from create_bot import download_dir, bot, logger
+from create_bot import bot, logger
 from db_handler.db_funk import get_admins, get_all_users
 from keyboards.inline_kbs import generate_online_url_button
 

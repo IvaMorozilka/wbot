@@ -1,4 +1,3 @@
-from ast import main
 from aiogram.filters.callback_data import CallbackData
 
 # Названия кнопок по дашбордам
