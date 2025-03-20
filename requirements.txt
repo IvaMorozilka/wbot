@@ -6,3 +6,5 @@ icecream
 apscheduler
 aiohttp-socks
 asyncpg-lite
+requests
+prettytable
