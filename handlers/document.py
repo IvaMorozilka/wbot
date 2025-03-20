@@ -1,4 +1,5 @@
 import io
+import os
 from aiogram import Router, F
 from aiogram.types import (
     Message,
@@ -15,11 +16,13 @@ from aiogram.fsm.context import FSMContext
 from keyboards.all_kb import main_kb
 from keyboards.inline_kbs import goback_actions_kb, main_loader_kb
 from utils.excel_helpers.checker import check_document_by_category
+from utils.api import upload_documnet_to_filestoarage
 from utils.helpers import send_document
 from utils.constants import DASHBOARD_CALLBACKS, INSTRUCTIONS_IMAGES, DASHBOARD_NAMES
 from handlers.states import States
 from db_handler.db_funk import get_user_info
 
+MINIO_UI_PATH = os.environ.get("MINIO_UI_PATH")
 
 document_router = Router()
 
@@ -104,6 +107,8 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
 
     # Getting file info
     file_id = message.document.file_id
+    file_name = message.document.file_name
+    mime_type = message.document.mime_type
 
     # Downloading to bytes
     file_io = io.BytesIO()
@@ -136,12 +141,20 @@ async def process_document(message: Message, state: FSMContext):  # noqa: F811
             ),
         )
         return
+    # Loading to s3 store...
+    error, response = await upload_documnet_to_filestoarage(
+        file_io.getvalue(), file_name, mime_type, dshb_name
+    )
+    if error:
+        await message.answer(f"Отправка в s3 не удалась {response}")
+        return
 
-    # Sending ...
+    # Sending documnets with caption to admins ...
+    inline_url = MINIO_UI_PATH + response.get("path")
     user_info = await get_user_info(message.from_user.id)
     caption_text = f"📄 Вам пришел новый документ!\n\n<b>Для дашборда:</b> {dshb_name}\n<b>Отправитель:</b> {user_info['full_name']}, @{message.from_user.username or 'не указан'}\n<b>Организация:</b> {user_info['org_name']}"
     total_users, users_ids_without_send = await send_document(
-        file_id, message, caption_text
+        file_id, message, caption_text, inline_url
     )
     user_names = ["Скоро будет. Пока неизвестно"]
 
