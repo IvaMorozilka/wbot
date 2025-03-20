@@ -87,3 +87,9 @@ def settings_confirm_action_kb(level):
             ],
         ]
     )
+
+
+def generate_online_url_button(url: str):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="🛢️ Перейти в Minio", url=url)]]
+    )
