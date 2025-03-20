@@ -12,3 +12,4 @@ class States(StatesGroup):
 
 class SettingsStates(StatesGroup):
     waiting_for_text = State()
+    waiting_for_ids = State()
