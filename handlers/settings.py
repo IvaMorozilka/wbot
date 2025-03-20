@@ -48,7 +48,10 @@ async def main_menu(call: CallbackQuery, callback_data: SettingsCallback):
 
 
 @settings_router.callback_query(SettingsCallback.filter(F.option == "back"))
-async def go_back(call: CallbackQuery, callback_data: SettingsCallback):
+async def go_back(
+    call: CallbackQuery, callback_data: SettingsCallback, state: FSMContext
+):
+    await state.clear()
     if callback_data.level == "show":
         await call.message.edit_text(
             text="Просмотр", reply_markup=generate_settings_kb("show")
@@ -97,22 +100,39 @@ async def send_menu(
         await state.set_state(SettingsStates.waiting_for_text)
     elif callback_data.option == "to_smb":
         await call.message.edit_text(
-            text="Пока недоступно", reply_markup=generate_settings_kb("send", True)
+            text="Введите список user_id`s через ',', пример: 8888888,888888",
+            reply_markup=generate_settings_kb("send", True),
         )
+        await state.set_state(SettingsStates.waiting_for_ids)
     elif callback_data.option == "confirm":
         data = await state.get_data()
         message_id = data.get("message_id_to_send")
+        user_ids = data.get("user_input_ids", "")
+        logger.info(f"sending msg to {user_ids} message_id {message_id}")
 
         if message_id:
             # Отправляем сообщение всем пользователям
-            successful, failed = await send_copy_of_message_to_all_users(
-                bot, message_id, call.from_user.id
-            )
+            if not user_ids:
+                successful, failed = await send_copy_of_message_to_users(
+                    bot,
+                    message_id,
+                    call.from_user.id,
+                )
 
-            await call.message.edit_text(
-                text=f"👆 Ваше сообщение было отправлено всем пользователям\n{f'❌ Не удалось отправить {failed} пользователям' if failed > 0 else ''}",
-                reply_markup=None,
-            )
+                await call.message.edit_text(
+                    text=f"👆 Ваше сообщение было отправлено всем пользователям\n{f'❌ Не удалось отправить {failed} пользователям' if failed else ''}",
+                    reply_markup=None,
+                )
+            else:
+                successful, failed = await send_copy_of_message_to_users(
+                    bot, message_id, call.from_user.id, all=False, users_ids=user_ids
+                )
+                logger.info(f"s: {successful} f: {failed}")
+
+                await call.message.edit_text(
+                    text=f"👆 Ваше сообщение было отправлено {successful} пользователям\n{f'❌ Не удалось отправить {failed} пользователям. Возможно вы ошиблись с вводом user_id' if failed else ''}",
+                    reply_markup=None,
+                )
 
         await call.message.answer(
             text="Главное меню", reply_markup=generate_settings_kb("main")
@@ -126,11 +146,30 @@ async def send_menu(
         await state.clear()
 
 
+@settings_router.message(SettingsStates.waiting_for_ids)
+async def send_msg_to_smb(message: Message, state: FSMContext):
+    no_error, ids = parse_user_input_ids(message.text)
+    if not no_error:
+        await message.answer(
+            "Неверные ids, проверьте их и повторите попытку",
+            reply_markup=generate_settings_kb("send", back=True),
+        )
+        await state.set_state(SettingsStates.waiting_for_ids)
+        return
+
+    await state.update_data(user_input_ids=ids)
+    await message.answer(
+        text=f"Напишите сообщение, которые вы хотите отправить {ids}",
+        reply_markup=generate_settings_kb(level="send", back=True),
+    )
+    await state.set_state(SettingsStates.waiting_for_text)
+
+
 @settings_router.message(SettingsStates.waiting_for_text)
 async def send_msg_to_all(message: Message, state: FSMContext):
     copy_message = await message.copy_to(chat_id=message.chat.id)
     await state.update_data(message_id_to_send=copy_message.message_id)
     await message.answer(
-        text="Отправить данное сообшение всем?",
+        text="Потвердить отправку сообщения?",
         reply_markup=settings_confirm_action_kb(level="send"),
     )
