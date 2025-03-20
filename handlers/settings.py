@@ -1,3 +1,4 @@
+from email import message
 from aiogram import Router, F, Bot
 from aiogram.types import (
     Message,
@@ -11,11 +12,15 @@ from handlers.states import States
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from keyboards.all_kb import main_kb
-from keyboards.inline_kbs import generate_settings_kb, settings_confirm_action_kb
-from db_handler.db_funk import get_user_info, get_admins
+from keyboards.inline_kbs import (
+    generate_inline_info_kb,
+    generate_settings_kb,
+    settings_confirm_action_kb,
+)
+from db_handler.db_funk import get_all_users, get_user_info, get_admins
 from utils.constants import SettingsCallback
 from handlers.states import SettingsStates
-from utils.helpers import send_message_to_all_users
+from utils.helpers import print_info_table, send_copy_of_message_to_all_users
 
 settings_router = Router()
 
@@ -33,11 +38,13 @@ async def main_menu(call: CallbackQuery, callback_data: SettingsCallback):
         await call.message.edit_text(
             text="Просмотр", reply_markup=generate_settings_kb(callback_data.option)
         )
-    if callback_data.option == "send":
+    elif callback_data.option == "send":
         await call.message.edit_text(
             text="Отправка сообщения",
             reply_markup=generate_settings_kb(callback_data.option),
         )
+    elif callback_data.option == "exit":
+        await call.message.delete()
 
 
 @settings_router.callback_query(SettingsCallback.filter(F.option == "back"))
@@ -54,18 +61,27 @@ async def go_back(call: CallbackQuery, callback_data: SettingsCallback):
 
 @settings_router.callback_query(SettingsCallback.filter(F.level == "show"))
 async def show_menu(call: CallbackQuery, callback_data: SettingsCallback, bot: Bot):
-    if callback_data.option == "admins":
-        await call.message.edit_text(
-            text="Показал администраторов",
-            reply_markup=generate_settings_kb("show", True),
+    await call.answer()
+
+    if callback_data.option == "all_users":
+        all_users_data = await get_all_users()
+        await call.message.answer(
+            text="Все пользователи"
+            + print_info_table(
+                info_for_table=all_users_data,
+                header=["ID", "ИП", "ФИО", "ОРГ"],
+                ignore_field_names=["admin"],
+            )
         )
-    elif callback_data.option == "recievers":
-        await call.message.edit_text(
-            text="Показал получателей", reply_markup=generate_settings_kb("show", True)
-        )
-    else:
-        await call.message.edit_text(
-            text="Показал кого то еще", reply_markup=generate_settings_kb("show", True)
+    elif callback_data.option == "admins":
+        admins_data = await get_admins()
+        await call.message.answer(
+            text="Администраторы"
+            + print_info_table(
+                info_for_table=admins_data,
+                header=["ID", "ИП", "ФИО", "ОРГ"],
+                ignore_field_names=["admin"],
+            )
         )
 
 
@@ -89,7 +105,7 @@ async def send_menu(
 
         if message_id:
             # Отправляем сообщение всем пользователям
-            successful, failed = await send_message_to_all_users(
+            successful, failed = await send_copy_of_message_to_all_users(
                 bot, message_id, call.from_user.id
             )
 
@@ -110,7 +126,7 @@ async def send_menu(
         await state.clear()
 
 
-@settings_router.message(F.text, SettingsStates.waiting_for_text)
+@settings_router.message(SettingsStates.waiting_for_text)
 async def send_msg_to_all(message: Message, state: FSMContext):
     copy_message = await message.copy_to(chat_id=message.chat.id)
     await state.update_data(message_id_to_send=copy_message.message_id)

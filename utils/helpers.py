@@ -1,20 +1,25 @@
 from aiogram import Bot
 from aiogram.types import Message, BufferedInputFile
+from aiogram.exceptions import TelegramBadRequest
 import os
 import asyncio
 import io
 import pandas as pd
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
+import aiohttp
+from prettytable import PrettyTable, TableStyle
 
-from create_bot import download_dir, bot
+from create_bot import download_dir, bot, logger
 from db_handler.db_funk import get_admins, get_all_users
+from keyboards.inline_kbs import generate_online_url_button
 
 
 async def send_document(
     file_id: str,
     message: Message,
     caption_text: str,
+    inline_url: str,
     bot: Bot = bot,
     delete_message_timeout: int = 1,
     show_progress: bool = True,
@@ -34,6 +39,7 @@ async def send_document(
                 chat_id=user_id,  # ID чата пользователя
                 document=file_id,  # Открываем сохраненный файл
                 caption=caption_text,  # Необязательный текст под файлом
+                reply_markup=generate_online_url_button(url=inline_url),
             )
             if show_progress:
                 sending_text = sending_text.replace("⚪️", "🟢", 1)
@@ -42,8 +48,10 @@ async def send_document(
                     chat_id=message.chat.id,
                     message_id=sending_msg.message_id,
                 )
+        except TelegramBadRequest as e:
+            logger.error(e)
         except Exception as e:
-            print(e)
+            logger.error(e)
             ids_without_send.append(user_id)
             if show_progress:
                 sending_text = sending_text.replace("⚪️", "🔴", 1)
@@ -61,7 +69,7 @@ async def send_document(
     return num_reciever_users, ids_without_send
 
 
-async def send_message_to_all_users(
+async def send_copy_of_message_to_all_users(
     bot: Bot, message_id: int, from_chat_id: int
 ) -> tuple[int, int]:
     # Получаем всех пользователей из базы данных
@@ -94,3 +102,21 @@ async def send_message_to_all_users(
             failed += 1
 
     return successful, failed
+
+
+def print_info_table(
+    info_for_table: list[dict], header=list[str], ignore_field_names=list[str]
+):
+    table = PrettyTable()
+    table.set_style(TableStyle.DOUBLE_BORDER)
+    table.left_padding_width = 0
+    table.right_padding_width = 0
+    table.field_names = header
+
+    for i in range(len(info_for_table)):
+        filtered = {
+            k: v for k, v in info_for_table[i].items() if k not in ignore_field_names
+        }
+        table.add_row(list(filtered.values()))
+
+    return f"<pre>{table.get_string()}</pre>"
