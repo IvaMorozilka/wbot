@@ -81,6 +81,9 @@ async def send_copy_of_message_to_all_users(
     successful = 0
     failed = 0
 
+    if not users:
+        return 0, 1
+
     for user_id in users:
         try:
             # Копируем сообщение пользователю
