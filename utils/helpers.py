@@ -69,12 +69,18 @@ async def send_document(
     return num_reciever_users, ids_without_send
 
 
-async def send_copy_of_message_to_all_users(
-    bot: Bot, message_id: int, from_chat_id: int
+async def send_copy_of_message_to_users(
+    bot: Bot,
+    message_id: int,
+    from_chat_id: int,
+    all: bool = True,
+    users_ids: list[int] = None,
 ) -> tuple[int, int]:
     # Получаем всех пользователей из базы данных
     users = await get_all_users()
     users = [user.get("user_id") for user in users]
+    if not all:
+        users = [user for user in users if user in users_ids]
     # Фильтр, чтобы не дублировалось сообщение в чат
     users = list(filter(lambda user: user != from_chat_id, users))
 
@@ -101,7 +107,7 @@ async def send_copy_of_message_to_all_users(
             failed += 1
         except Exception as e:
             # Логирование других ошибок
-            print(f"Error sending message to {user_id}: {e}")
+            logger.info(f"Error sending message to {user_id}: {e}")
             failed += 1
 
     return successful, failed
